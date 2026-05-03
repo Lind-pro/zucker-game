@@ -758,7 +758,8 @@
     .package-big { width: clamp(180px, 55vmin, 320px); height: clamp(180px, 55vmin, 320px); margin-top: 0; }
     .scene-title { top: clamp(40px, 6vh, 70px); }
     .map-progress { bottom: 6px; }
-    .stage-title { top: clamp(40px, 6vh, 60px); }
+    .tracking-card { top: clamp(40px, 6vh, 60px); }
+    .tracking-log { max-height: clamp(40px, 8vh, 70px); }
     .toy-name { margin-top: 8px; }
     .big-btn { margin-top: clamp(8px, 1vh, 16px); }
   }
@@ -766,7 +767,9 @@
   /* 极小屏（旧手机）补充：进度条字号最小化，文字不换行 */
   @media (max-width: 360px) {
     .map-progress-dot { width: 24px; height: 24px; font-size: 12px; }
-    .scene-title, .stage-title { font-size: 18px; }
+    .scene-title { font-size: 18px; }
+    .tracking-current { font-size: 14px; }
+    .tracking-header { font-size: 10px; }
     .shop-card { width: 92px; }
     .shop-card .pkg-icon { width: 56px; height: 56px; }
   }
@@ -933,19 +936,100 @@
     to { left: calc(60vw); }
   }
 
-  .stage-title {
+  /* 物流追踪卡（替代旧 stage-title） */
+  .tracking-card {
     position: absolute;
-    top: clamp(54px, 9vmin, 90px); left: 50%; transform: translateX(-50%);
-    font-size: clamp(16px, 3.6vmin, 28px); font-weight: bold;
-    color: #fff;
-    text-shadow: 3px 3px 0 #ff6b9d, 4px 4px 0 rgba(0,0,0,0.2);
+    top: clamp(56px, 9.5vmin, 100px);
+    left: 50%; transform: translateX(-50%);
+    width: min(94vw, 480px);
+    background: rgba(255,255,255,0.96);
+    border-radius: 16px;
+    padding: clamp(8px, 1.6vmin, 14px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    border: 3px solid #fff;
     z-index: 10;
-    text-align: center;
-    background: rgba(0,0,0,0.3);
-    padding: clamp(6px, 1.4vmin, 12px) clamp(14px, 3vmin, 28px);
-    border-radius: 999px;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
+  }
+  .tracking-header {
+    font-family: "Courier New", monospace;
+    font-size: clamp(11px, 2.2vmin, 14px);
+    color: #555;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    display: flex; flex-wrap: wrap; gap: 4px 10px;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .tracking-header .tag {
+    background: #ff6b9d; color: #fff;
+    padding: 1px 6px; border-radius: 4px;
+    font-size: clamp(10px, 2vmin, 12px);
+    font-weight: bold;
+  }
+  .tracking-route { font-weight: bold; color: #1d3557; }
+  .tracking-current {
+    font-size: clamp(13px, 3vmin, 20px);
+    font-weight: bold;
+    color: #1d3557;
+    margin: 4px 0 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    animation: tracking-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes tracking-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+  }
+  .tracking-log {
+    max-height: clamp(70px, 16vmin, 120px);
+    overflow-y: auto;
+    font-size: clamp(11px, 2.2vmin, 14px);
+    color: #555;
+    font-family: "Courier New", monospace;
+    scroll-behavior: smooth;
+    padding-right: 4px;
+  }
+  .tracking-log::-webkit-scrollbar { width: 4px; }
+  .tracking-log::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+  .log-entry {
+    padding: 3px 0;
+    border-top: 1px dotted #eee;
+    display: flex; gap: 8px; align-items: center;
+    animation: log-slide 0.4s ease-out;
+  }
+  .log-entry:first-child { border-top: none; }
+  .log-time { color: #999; flex-shrink: 0; }
+  .log-icon { flex-shrink: 0; }
+  .log-text { flex: 1; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @keyframes log-slide {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .checkpoint-toast {
+    position: absolute;
+    top: 50%; right: clamp(10px, 3vmin, 30px);
+    background: linear-gradient(90deg, #2ec4b6, #06d6a0); color: #fff;
+    border-radius: 12px;
+    padding: clamp(8px, 1.6vmin, 14px) clamp(14px, 3vmin, 22px);
+    font-size: clamp(13px, 2.6vmin, 18px);
+    font-weight: bold;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    z-index: 12;
+    border: 3px solid #fff;
     white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(120%, -50%);
+  }
+  .checkpoint-toast.show {
+    animation: toast-pop 1.6s ease-out forwards;
+  }
+  @keyframes toast-pop {
+    0% { transform: translate(120%, -50%); opacity: 0; }
+    15% { transform: translate(0, -50%); opacity: 1; }
+    80% { transform: translate(0, -50%); opacity: 1; }
+    100% { transform: translate(20px, -50%); opacity: 0; }
   }
 
   .map-progress {
@@ -1050,8 +1134,17 @@
   <div class="scene map-scene hidden" id="sceneMap">
     <div class="map-bg-layer" id="mapBg"></div>
     <div class="map-decor" id="mapDecor"></div>
-    <div class="stage-title" id="stageTitle">出库中...</div>
+    <div class="tracking-card" id="trackingCard">
+      <div class="tracking-header">
+        <span>📋 <span id="trackingNum">SF000000000000</span></span>
+        <span class="tag" id="trackingLabel">同城速达</span>
+        <span class="tracking-route"><span id="trackingFrom">起点</span> → 你家 🏠</span>
+      </div>
+      <div class="tracking-current" id="trackingCurrent">出库中...</div>
+      <div class="tracking-log" id="trackingLog"></div>
+    </div>
     <div class="map-vehicle" id="mapVehicle"></div>
+    <div class="checkpoint-toast" id="checkpointToast"></div>
     <div class="map-progress" id="mapProgress"></div>
   </div>
 
@@ -1877,15 +1970,161 @@ const VEHICLE_SVGS = {
   </svg>`,
 };
 
-// 物流旅程：每一段配置
-const JOURNEY_STAGES = [
-  { name: '出库打包',   icon: '📦', vehicle: 'truck_van',  bg: 'warehouse',     duration: 1500, sound: 'whoosh' },
-  { name: '高铁运输',   icon: '🚄', vehicle: 'hsr',        bg: 'countryside',   duration: 1700, sound: 'train' },
-  { name: '空运中',     icon: '✈️', vehicle: 'plane',      bg: 'sky',           duration: 1700, sound: 'plane' },
-  { name: '城市配送',   icon: '🚚', vehicle: 'truck_van',  bg: 'city',          duration: 1500, sound: 'truck' },
-  { name: '小哥派送',   icon: '🛵', vehicle: 'motorcycle', bg: 'suburb',        duration: 1400, sound: 'moto' },
-  { name: '送货上门',   icon: '🛺', vehicle: 'tricycle',   bg: 'neighborhood',  duration: 1400, sound: 'truck' },
-];
+// ============================================================
+// 物流路线：城市池 + 阶段类型 + 路线模板
+// ============================================================
+const CITY_POOLS = {
+  origin: [
+    '义乌国际仓', '深圳坂田仓', '广州黄埔仓', '上海闵行中心', '杭州萧山仓',
+    '泉州晋江仓', '苏州昆山仓', '东莞松山湖仓', '宁波北仑仓', '南京江宁仓',
+    '佛山顺德仓', '成都郫都仓', '武汉黄陂仓', '青岛胶州仓', '天津武清仓',
+    '厦门海沧仓', '郑州航空港仓', '西安长安仓',
+  ],
+  hsr: [
+    '上海虹桥', '杭州东站', '南京南站', '北京南站', '广州南站', '武汉站',
+    '长沙南站', '郑州东站', '西安北站', '济南西站', '合肥南站', '南昌西站',
+    '厦门北站', '福州站', '重庆西站', '昆明南站',
+  ],
+  air: [
+    '浦东机场', '白云机场', '首都机场', '萧山机场', '双流机场', '宝安机场',
+    '咸阳机场', '禄口机场', '天府机场', '大兴机场', '高崎机场', '黄花机场',
+  ],
+  cityHub: [
+    '朝阳分拨中心', '浦东分拨中心', '天河分拨中心', '西湖分拨中心',
+    '南山分拨中心', '姑苏分拨中心', '海淀分拨中心', '徐汇分拨中心',
+    '武侯分拨中心', '锦江分拨中心', '思明分拨中心', '建邺分拨中心',
+  ],
+  district: [
+    '朝阳街道', '西湖街道', '浦东新区', '天河北片区', '南山中心区',
+    '姑苏老城区', '海淀中关村', '徐汇衡复风貌区', '武侯春熙路', '锦江九眼桥',
+    '思明环岛路', '建邺河西',
+  ],
+};
+
+const STAGE_TYPES = {
+  warehouse:  { icon: '📦', vehicle: 'truck_van',  bg: 'warehouse',    duration: 1400, sound: 'whoosh' },
+  hsr:        { icon: '🚄', vehicle: 'hsr',        bg: 'countryside',  duration: 1700, sound: 'train' },
+  truck_long: { icon: '🚛', vehicle: 'truck_van',  bg: 'countryside',  duration: 1500, sound: 'truck' },
+  air:        { icon: '✈️', vehicle: 'plane',      bg: 'sky',          duration: 1700, sound: 'plane' },
+  city_hub:   { icon: '🚚', vehicle: 'truck_van',  bg: 'city',         duration: 1300, sound: 'truck' },
+  moto:       { icon: '🛵', vehicle: 'motorcycle', bg: 'suburb',       duration: 1300, sound: 'moto' },
+  tricycle:   { icon: '🛺', vehicle: 'tricycle',   bg: 'neighborhood', duration: 1300, sound: 'truck' },
+};
+
+const JOURNEY_TEMPLATES = {
+  same_city: {
+    label: '同城速达',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'city_hub',  name: '同城分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+    ],
+  },
+  same_province_truck: {
+    label: '省内陆运',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'truck_long',name: '省内干线', cityRole: 'cityHub',  verb: '运抵' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+    ],
+  },
+  cross_province_hsr: {
+    label: '高铁直送',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'hsr',       name: '高铁运输', cityRole: 'hsr',      verb: '到达' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+      { type: 'tricycle',  name: '送货上门', cityRole: null,       verb: '即将抵达' },
+    ],
+  },
+  cross_province_truck: {
+    label: '跨省陆运',
+    steps: [
+      { type: 'warehouse', name: '揽收出库',     cityRole: 'origin',   verb: '揽收于' },
+      { type: 'truck_long',name: '干线运输',     cityRole: 'hsr',      verb: '途经' },
+      { type: 'truck_long',name: '中转干线',     cityRole: 'cityHub',  verb: '运抵' },
+      { type: 'city_hub',  name: '城市分拨',     cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送',     cityRole: 'district', verb: '派送至' },
+    ],
+  },
+  long_air: {
+    label: '航空速运',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'truck_long',name: '机场转运', cityRole: 'air',      verb: '送达' },
+      { type: 'air',       name: '空运中',   cityRole: 'air',      verb: '降落于' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+      { type: 'tricycle',  name: '送货上门', cityRole: null,       verb: '即将抵达' },
+    ],
+  },
+  multi_hub: {
+    label: '多段中转',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'hsr',       name: '高铁中转', cityRole: 'hsr',      verb: '换装于' },
+      { type: 'air',       name: '空运中',   cityRole: 'air',      verb: '降落于' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+    ],
+  },
+};
+
+const TEMPLATE_WEIGHTS = {
+  small:  { same_city: 50, same_province_truck: 25, cross_province_hsr: 15, cross_province_truck: 5,  long_air: 3,  multi_hub: 2 },
+  medium: { same_city: 12, same_province_truck: 18, cross_province_hsr: 25, cross_province_truck: 15, long_air: 18, multi_hub: 12 },
+  big:    { same_city: 3,  same_province_truck: 8,  cross_province_hsr: 20, cross_province_truck: 14, long_air: 35, multi_hub: 20 },
+};
+
+function pickFrom(arr, exclude) {
+  const pool = exclude ? arr.filter(x => x !== exclude) : arr;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function weightedPick(weights) {
+  const entries = Object.entries(weights);
+  const total = entries.reduce((s, [, w]) => s + w, 0);
+  let r = Math.random() * total;
+  for (const [k, w] of entries) {
+    if (r < w) return k;
+    r -= w;
+  }
+  return entries[0][0];
+}
+function generateTrackingNumber() {
+  const carriers = ['SF', 'YT', 'YD', 'JD', 'ST', 'ZT'];
+  const c = carriers[Math.floor(Math.random() * carriers.length)];
+  const digits = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+  return c + digits;
+}
+
+function generateJourney(boxId) {
+  const weights = TEMPLATE_WEIGHTS[boxId] || TEMPLATE_WEIGHTS.small;
+  const tplKey = weightedPick(weights);
+  const tpl = JOURNEY_TEMPLATES[tplKey];
+
+  const usedByRole = {};
+  const stages = tpl.steps.map(step => {
+    const t = STAGE_TYPES[step.type];
+    let city = '你家门口';
+    if (step.cityRole) {
+      city = pickFrom(CITY_POOLS[step.cityRole], usedByRole[step.cityRole]);
+      usedByRole[step.cityRole] = city;
+    }
+    return { ...t, name: step.name, city, verb: step.verb };
+  });
+  let prev = null;
+  for (const s of stages) { s.from = prev; prev = s.city; }
+
+  return {
+    template: tplKey,
+    label: tpl.label,
+    trackingNumber: generateTrackingNumber(),
+    origin: stages[0].city,
+    stages,
+  };
+}
 
 // ============================================================
 // 玩具数据
@@ -2169,14 +2408,13 @@ function buildMapDecor(stage) {
   }
 }
 
-function buildMapProgress(currentIdx) {
+function buildMapProgress(currentIdx, stages) {
   const progress = $('mapProgress');
   progress.innerHTML = '';
-  // 起点 📦 + 6个阶段 + 终点 🏠
   const dots = [
-    { icon: '📦', label: '起点' },
-    ...JOURNEY_STAGES.map(s => ({ icon: s.icon, label: s.name })),
-    { icon: '🏠', label: '到家' },
+    { icon: '📦' },
+    ...stages.map(s => ({ icon: s.icon })),
+    { icon: '🏠' },
   ];
   dots.forEach((d, i) => {
     const dot = document.createElement('div');
@@ -2188,42 +2426,90 @@ function buildMapProgress(currentIdx) {
   });
 }
 
+let currentJourney = null;
+
+function fmtSimTime(date) {
+  return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+}
+
+function appendTrackingLog(icon, time, text) {
+  const log = $('trackingLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${time}</span><span class="log-icon">${icon}</span><span class="log-text">${text}</span>`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showCheckpointToast(text) {
+  const t = $('checkpointToast');
+  t.textContent = text;
+  t.classList.remove('show');
+  void t.offsetWidth;
+  t.classList.add('show');
+}
+
+function describeStage(stage) {
+  if (stage.city === '你家门口') return `${stage.icon} ${stage.name} · 即将到家`;
+  if (stage.from && stage.from !== stage.city) return `${stage.icon} ${stage.name} · ${stage.from} → ${stage.city}`;
+  return `${stage.icon} ${stage.name} · ${stage.city}`;
+}
+
 async function playJourney() {
   showScene(sceneMap);
 
-  for (let i = 0; i < JOURNEY_STAGES.length; i++) {
-    const stage = JOURNEY_STAGES[i];
+  const journey = generateJourney(currentBox.id);
+  currentJourney = journey;
 
-    // 切换背景
+  // 模拟时间起点：往前推 4-12 小时，每段递增 30-90 分钟，看起来像跨小时的真实物流
+  const simBase = new Date(Date.now() - (4 + Math.random() * 8) * 3600 * 1000);
+  let simCursor = simBase.getTime();
+
+  $('trackingNum').textContent = journey.trackingNumber;
+  $('trackingFrom').textContent = journey.origin;
+  $('trackingLabel').textContent = journey.label;
+  $('trackingLog').innerHTML = '';
+  $('trackingCurrent').textContent = `${fmtSimTime(simBase)} 已下单 · 等待揽收`;
+  appendTrackingLog('📝', fmtSimTime(simBase), `订单已生成 · ${journey.label}`);
+
+  for (let i = 0; i < journey.stages.length; i++) {
+    const stage = journey.stages[i];
+
     $('mapBg').className = 'map-bg-layer map-bg-' + stage.bg;
     buildMapDecor(stage);
-    buildMapProgress(i);
-    $('stageTitle').textContent = stage.icon + ' ' + stage.name;
+    buildMapProgress(i, journey.stages);
+    $('trackingCurrent').textContent = describeStage(stage);
 
-    // 重置车辆
     const vehicle = $('mapVehicle');
     vehicle.classList.remove('crossing', 'arriving', 'flying');
     vehicle.innerHTML = VEHICLE_SVGS[stage.vehicle];
     if (stage.vehicle === 'plane') vehicle.classList.add('flying');
 
-    // 触发滑动动画
     void vehicle.offsetWidth;
-    if (i === JOURNEY_STAGES.length - 1) {
+    if (i === journey.stages.length - 1) {
       vehicle.classList.add('arriving');
     } else {
       vehicle.classList.add('crossing');
     }
 
-    // 播放音效
     if (SFX[stage.sound]) SFX[stage.sound]();
 
-    // 等待此阶段完成
     await new Promise(r => setTimeout(r, stage.duration));
+
+    simCursor += (30 + Math.random() * 60) * 60 * 1000;
+    const stamp = fmtSimTime(new Date(simCursor));
+    const logText = stage.city === '你家门口'
+      ? '即将抵达 · 你家门口'
+      : `${stage.verb} ${stage.city}`;
+    appendTrackingLog(stage.icon, stamp, logText);
+    showCheckpointToast(stage.city === '你家门口'
+      ? '✓ 即将到家'
+      : `✓ 已抵达 ${stage.city}`);
   }
 
-  // 旅程结束 -> 门口场景，包裹已经在门口
-  buildMapProgress(JOURNEY_STAGES.length);
-  await new Promise(r => setTimeout(r, 400));
+  buildMapProgress(journey.stages.length, journey.stages);
+  $('trackingCurrent').textContent = '🏠 派送完成 · 等待签收';
+  await new Promise(r => setTimeout(r, 600));
   arriveAtDoor();
 }
 
