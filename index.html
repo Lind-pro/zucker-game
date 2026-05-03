@@ -643,6 +643,252 @@
     0%, 100% { transform: scale(1); opacity: 0.6; }
     50% { transform: scale(1.3); opacity: 1; }
   }
+
+  /* ============ 物流地图场景 ============ */
+  .map-scene { background: #87ceeb; overflow: hidden; }
+  .map-bg-layer {
+    position: absolute; inset: 0;
+    transition: opacity 0.5s, background 0.6s;
+  }
+  .map-bg-warehouse {
+    background: linear-gradient(180deg, #cfd8dc 0%, #b0bec5 60%, #78909c 100%);
+  }
+  .map-bg-countryside {
+    background: linear-gradient(180deg, #87ceeb 0%, #b8e2a3 60%, #6a994e 100%);
+  }
+  .map-bg-sky {
+    background: linear-gradient(180deg, #4a90e2 0%, #87ceeb 50%, #c5e3f0 100%);
+  }
+  .map-bg-city {
+    background: linear-gradient(180deg, #ffb88c 0%, #ff8a65 50%, #b0bec5 100%);
+  }
+  .map-bg-suburb {
+    background: linear-gradient(180deg, #ffcdb2 0%, #ffb4a2 60%, #b5e48c 100%);
+  }
+  .map-bg-neighborhood {
+    background: linear-gradient(180deg, #ffd6a5 0%, #ffadad 60%, #d4a373 100%);
+  }
+  .map-bg-home {
+    background: linear-gradient(180deg, #87ceeb 0%, #ffd6e0 60%, #ffe8a3 100%);
+  }
+
+  /* 背景装饰元素 */
+  .map-decor {
+    position: absolute; pointer-events: none;
+  }
+  .cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 100px;
+    animation: cloud-drift 10s linear infinite;
+  }
+  .cloud::before, .cloud::after {
+    content: ""; position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+  }
+  .cloud-1 { width: 80px; height: 24px; top: 12%; left: 10%; }
+  .cloud-1::before { width: 36px; height: 36px; top: -16px; left: 12px; }
+  .cloud-1::after { width: 28px; height: 28px; top: -10px; left: 42px; }
+  .cloud-2 { width: 100px; height: 28px; top: 20%; right: 15%; animation-duration: 14s; animation-delay: -3s; }
+  .cloud-2::before { width: 40px; height: 40px; top: -18px; left: 16px; }
+  .cloud-2::after { width: 32px; height: 32px; top: -12px; left: 52px; }
+  .cloud-3 { width: 70px; height: 22px; top: 30%; left: 50%; animation-duration: 12s; animation-delay: -6s; }
+  .cloud-3::before { width: 30px; height: 30px; top: -14px; left: 10px; }
+  .cloud-3::after { width: 24px; height: 24px; top: -8px; left: 36px; }
+  @keyframes cloud-drift {
+    from { transform: translateX(-30vw); }
+    to { transform: translateX(30vw); }
+  }
+
+  /* 山脉 / 城市 / 树等远景 */
+  .mountain {
+    position: absolute;
+    bottom: 30%;
+    width: 0; height: 0;
+    border-left: 80px solid transparent;
+    border-right: 80px solid transparent;
+    border-bottom: 110px solid #6c757d;
+  }
+  .mountain::after {
+    content: ""; position: absolute;
+    top: -10px; left: -25px;
+    border-left: 25px solid transparent;
+    border-right: 25px solid transparent;
+    border-bottom: 30px solid #fff;
+  }
+  .mountain-1 { left: 5%; }
+  .mountain-2 { left: 30%; transform: scale(1.3); }
+  .mountain-3 { right: 5%; transform: scale(0.9); }
+
+  .building-skyline {
+    position: absolute; left: 0; right: 0; bottom: 30%;
+    height: 35%;
+    pointer-events: none;
+    background:
+      linear-gradient(to right,
+        #455a64 0% 8%, transparent 8% 10%,
+        #37474f 10% 16%, transparent 16% 18%,
+        #546e7a 18% 28%, transparent 28% 30%,
+        #455a64 30% 40%, transparent 40% 42%,
+        #37474f 42% 52%, transparent 52% 54%,
+        #546e7a 54% 64%, transparent 64% 66%,
+        #455a64 66% 74%, transparent 74% 76%,
+        #37474f 76% 86%, transparent 86% 88%,
+        #546e7a 88% 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, transparent 30%, #000 30%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, transparent 30%, #000 30%);
+  }
+  .building-skyline::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 5% 60%, #ffd60a 0 1px, transparent 2px) 0 0/40px 40px,
+      radial-gradient(circle at 12% 80%, #ffd60a 0 1px, transparent 2px) 0 0/35px 30px;
+  }
+
+  .ground-track {
+    position: absolute; left: 0; right: 0; bottom: 24%;
+    height: 6px;
+    background: #1d3557;
+    box-shadow: 0 6px 0 #2a9d8f, 0 -6px 0 #2a9d8f;
+  }
+  .ground-track::before {
+    content: ""; position: absolute; left: 0; right: 0;
+    top: 50%; height: 2px;
+    background: repeating-linear-gradient(90deg, #fff 0 16px, transparent 16px 28px);
+    transform: translateY(-50%);
+  }
+
+  .ground-road {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+  }
+  .ground-road::before {
+    content: ""; position: absolute; left: 0; right: 0;
+    top: 30%; height: 4px;
+    background: repeating-linear-gradient(90deg, #ffd60a 0 30px, transparent 30px 50px);
+  }
+
+  .grass-field {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #95d5b2 0%, #52b788 100%);
+  }
+
+  .home-target {
+    position: absolute;
+    right: 10%; bottom: 28%;
+    width: 110px; height: 110px;
+    z-index: 3;
+  }
+  .home-target svg { width: 100%; height: 100%; }
+
+  /* 移动的运输工具 */
+  .map-vehicle {
+    position: absolute;
+    bottom: 18%;
+    left: -260px;
+    width: 240px; height: 180px;
+    z-index: 5;
+  }
+  .map-vehicle svg { width: 100%; height: 100%; }
+  .map-vehicle.flying { bottom: 45%; }
+  .map-vehicle.crossing { animation: vehicle-cross 2s linear forwards; }
+  @keyframes vehicle-cross {
+    from { left: -260px; }
+    to { left: calc(100vw + 60px); }
+  }
+  .map-vehicle.arriving { animation: vehicle-arrive 2s ease-out forwards; }
+  @keyframes vehicle-arrive {
+    from { left: -260px; }
+    to { left: calc(60vw); }
+  }
+
+  .stage-title {
+    position: absolute;
+    top: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 28px; font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 #ff6b9d, 4px 4px 0 rgba(0,0,0,0.2);
+    z-index: 10;
+    text-align: center;
+    background: rgba(0,0,0,0.3);
+    padding: 10px 24px;
+    border-radius: 999px;
+    backdrop-filter: blur(4px);
+    white-space: nowrap;
+  }
+
+  .map-progress {
+    position: absolute;
+    bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px;
+    background: rgba(255,255,255,0.9);
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 3px solid #fff;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+  .map-progress-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .map-progress-dot.done {
+    background: #2ec4b6;
+    color: #fff;
+  }
+  .map-progress-dot.active {
+    background: #ffd60a;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(255,214,10,0.4);
+    animation: dot-pulse 0.8s ease-in-out infinite;
+  }
+  @keyframes dot-pulse {
+    0%, 100% { transform: scale(1.2); }
+    50% { transform: scale(1.35); }
+  }
+  .map-progress-dot:not(:last-child)::after {
+    content: ""; position: absolute;
+    right: -4px; top: 50%; width: 4px; height: 2px;
+    background: #ccc;
+    transform: translateY(-50%);
+  }
+
+  /* 包裹小图标跟随飞行 */
+  .pkg-trail {
+    position: absolute;
+    width: 30px; height: 30px;
+    background: #d4a373;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 6;
+    pointer-events: none;
+  }
+  .pkg-trail::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 45%;
+    height: 4px; background: #f4d35e;
+  }
+
+  /* 烟尘 */
+  .smoke-puff {
+    position: absolute;
+    width: 24px; height: 24px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: puff-fade 1s ease-out forwards;
+  }
+  @keyframes puff-fade {
+    from { transform: scale(0.5); opacity: 0.8; }
+    to { transform: scale(1.8) translateY(-20px); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -665,6 +911,15 @@
     <div class="package-on-doorstep" id="packageDoor" style="display:none"></div>
     <div class="tap-hint" id="doorHint" style="display:none">👆 点一下打开</div>
     <div class="shop-row" id="shopRow" style="position:absolute; bottom:32px; left:0; right:0; display:none; z-index:9"></div>
+  </div>
+
+  <!-- 场景：物流地图 -->
+  <div class="scene map-scene hidden" id="sceneMap">
+    <div class="map-bg-layer" id="mapBg"></div>
+    <div class="map-decor" id="mapDecor"></div>
+    <div class="stage-title" id="stageTitle">出库中...</div>
+    <div class="map-vehicle" id="mapVehicle"></div>
+    <div class="map-progress" id="mapProgress"></div>
   </div>
 
   <!-- 场景：拆箱 -->
@@ -1315,6 +1570,178 @@ const PKG_SVGS = {
 };
 
 // ============================================================
+// 运输工具 SVG（物流地图用）
+// ============================================================
+const VEHICLE_SVGS = {
+  // 高铁子弹头
+  hsr: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="120" ry="4" fill="#000" opacity="0.2"/>
+      <path d="M0,80 Q30,55 80,52 L260,52 Q272,52 272,68 L272,120 Q272,130 260,130 L10,130 Q0,130 0,120 Z" fill="#fff"/>
+      <path d="M0,80 Q30,55 80,52 L260,52 Q272,52 272,68 L272,80 L0,80 Z" fill="#3a86ff"/>
+      <path d="M0,82 L272,82 L272,86 L0,86 Z" fill="#e63946"/>
+      <path d="M0,118 L272,118 L272,130 L10,130 Q0,130 0,120 Z" fill="#1d3557"/>
+      <rect x="40" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="72" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="104" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="136" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="168" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="200" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="232" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <ellipse cx="35" cy="68" rx="20" ry="6" fill="#fff" opacity="0.6"/>
+      <circle cx="50" cy="135" r="10" fill="#1a1a1a"/>
+      <circle cx="120" cy="135" r="10" fill="#1a1a1a"/>
+      <circle cx="200" cy="135" r="10" fill="#1a1a1a"/>
+      <circle cx="20" cy="78" r="3" fill="#ffd60a"/>
+    </g>
+  </svg>`,
+
+  // 货运飞机
+  plane: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <path d="M30,80 Q20,68 30,58 L230,55 Q260,60 268,72 Q260,86 230,90 L40,90 Q28,90 30,80 Z" fill="#fff"/>
+      <path d="M30,80 Q20,68 30,58 L230,55 Q260,60 268,72 Q260,86 230,90 L40,90 Q28,90 30,80 Z" fill="none" stroke="#1d3557" stroke-width="2.5"/>
+      <rect x="50" y="62" width="140" height="14" rx="3" fill="#e63946"/>
+      <text x="120" y="74" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold" font-family="sans-serif">EXPRESS ✈</text>
+      <path d="M70,58 L40,15 L60,15 L100,55 Z" fill="#3498db"/>
+      <path d="M70,90 L40,135 L60,135 L100,90 Z" fill="#3498db"/>
+      <path d="M150,58 L130,30 L145,30 L170,55 Z" fill="#3498db"/>
+      <path d="M240,58 L260,40 L255,68 Z" fill="#3498db"/>
+      <circle cx="80" cy="73" r="3" fill="#a8dadc"/>
+      <circle cx="100" cy="73" r="3" fill="#a8dadc"/>
+      <circle cx="200" cy="73" r="3" fill="#a8dadc"/>
+      <circle cx="220" cy="73" r="3" fill="#a8dadc"/>
+      <path d="M260,68 Q272,72 260,76 L250,74 L250,70 Z" fill="#a8dadc"/>
+      <ellipse cx="80" cy="65" rx="30" ry="3" fill="#fff" opacity="0.7"/>
+    </g>
+  </svg>`,
+
+  // 货车
+  truck_van: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="115" ry="4" fill="#000" opacity="0.25"/>
+      <rect x="20" y="50" width="160" height="80" rx="6" fill="#fff"/>
+      <rect x="20" y="50" width="160" height="80" rx="6" fill="none" stroke="#1d3557" stroke-width="2"/>
+      <rect x="30" y="60" width="140" height="50" fill="#e63946"/>
+      <text x="100" y="93" text-anchor="middle" fill="#fff" font-size="22" font-weight="bold" font-family="sans-serif">EXPRESS</text>
+      <rect x="180" y="65" width="70" height="65" rx="6" fill="#3498db"/>
+      <rect x="188" y="72" width="55" height="28" rx="3" fill="#a8dadc"/>
+      <rect x="192" y="76" width="47" height="20" fill="#fff" opacity="0.5"/>
+      <rect x="20" y="125" width="230" height="8" fill="#1d3557"/>
+      <circle cx="60" cy="138" r="18" fill="#1a1a1a"/>
+      <circle cx="60" cy="138" r="9" fill="#adb5bd"/>
+      <circle cx="60" cy="138" r="4" fill="#495057"/>
+      <circle cx="210" cy="138" r="18" fill="#1a1a1a"/>
+      <circle cx="210" cy="138" r="9" fill="#adb5bd"/>
+      <circle cx="210" cy="138" r="4" fill="#495057"/>
+      <circle cx="248" cy="100" r="3" fill="#ffd60a"/>
+      <rect x="22" y="104" width="20" height="6" rx="1" fill="#fff"/>
+    </g>
+  </svg>`,
+
+  // 摩托车 / 电动车
+  motorcycle: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="100" ry="4" fill="#000" opacity="0.25"/>
+      <rect x="100" y="35" width="80" height="75" rx="5" fill="#e63946"/>
+      <rect x="105" y="42" width="70" height="30" rx="2" fill="#fff"/>
+      <text x="140" y="62" text-anchor="middle" font-size="13" font-weight="bold" fill="#e63946" font-family="sans-serif">EXPRESS</text>
+      <rect x="115" y="78" width="50" height="25" rx="2" fill="#c1121f"/>
+      <text x="140" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff" font-family="sans-serif">急送</text>
+      <rect x="186" y="78" width="40" height="40" rx="3" fill="#1d3557"/>
+      <path d="M70,118 L120,90 L160,118" stroke="#1d3557" stroke-width="6" fill="none"/>
+      <path d="M186,90 L210,68 L225,80" stroke="#1d3557" stroke-width="5" fill="none"/>
+      <circle cx="210" cy="68" r="8" fill="#1d3557"/>
+      <ellipse cx="208" cy="60" rx="6" ry="8" fill="#f4a261"/>
+      <circle cx="210" cy="55" r="5" fill="#1d3557"/>
+      <rect x="115" y="118" width="60" height="8" fill="#1d3557"/>
+      <circle cx="60" cy="138" r="20" fill="#1a1a1a"/>
+      <circle cx="60" cy="138" r="11" fill="#adb5bd"/>
+      <circle cx="60" cy="138" r="5" fill="#495057"/>
+      <circle cx="210" cy="138" r="20" fill="#1a1a1a"/>
+      <circle cx="210" cy="138" r="11" fill="#adb5bd"/>
+      <circle cx="210" cy="138" r="5" fill="#495057"/>
+      <circle cx="220" cy="118" r="6" fill="#ffd60a"/>
+    </g>
+  </svg>`,
+
+  // 三轮车（货运三轮）
+  tricycle: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="115" ry="4" fill="#000" opacity="0.25"/>
+      <rect x="120" y="40" width="130" height="85" rx="4" fill="#06d6a0"/>
+      <rect x="120" y="40" width="130" height="14" fill="#06b88c"/>
+      <rect x="128" y="58" width="115" height="55" fill="#fff"/>
+      <text x="186" y="92" text-anchor="middle" font-size="18" font-weight="bold" fill="#06d6a0" font-family="sans-serif">EXPRESS</text>
+      <text x="186" y="108" text-anchor="middle" font-size="11" fill="#06d6a0" font-family="sans-serif">送货上门</text>
+      <path d="M120,125 L80,125 L50,105" stroke="#1d3557" stroke-width="5" fill="none"/>
+      <rect x="40" y="80" width="50" height="40" rx="3" fill="#fcbf49"/>
+      <rect x="48" y="85" width="34" height="22" rx="2" fill="#a8dadc"/>
+      <rect x="50" y="87" width="30" height="18" fill="#fff" opacity="0.6"/>
+      <path d="M55,80 L65,55 L75,55 L85,80 Z" fill="#fcbf49"/>
+      <ellipse cx="70" cy="65" rx="6" ry="8" fill="#f4a261"/>
+      <circle cx="70" cy="58" r="6" fill="#1d3557"/>
+      <circle cx="55" cy="138" r="16" fill="#1a1a1a"/>
+      <circle cx="55" cy="138" r="8" fill="#adb5bd"/>
+      <circle cx="155" cy="138" r="16" fill="#1a1a1a"/>
+      <circle cx="155" cy="138" r="8" fill="#adb5bd"/>
+      <circle cx="220" cy="138" r="16" fill="#1a1a1a"/>
+      <circle cx="220" cy="138" r="8" fill="#adb5bd"/>
+      <rect x="38" y="95" width="6" height="4" fill="#fff"/>
+    </g>
+  </svg>`,
+
+  // 仓库
+  warehouse: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <rect x="20" y="50" width="240" height="90" fill="#adb5bd"/>
+      <path d="M20,50 L140,15 L260,50 Z" fill="#e63946"/>
+      <rect x="105" y="80" width="70" height="60" fill="#5a2d0c"/>
+      <rect x="105" y="80" width="70" height="60" fill="none" stroke="#1d3557" stroke-width="2"/>
+      <line x1="140" y1="80" x2="140" y2="140" stroke="#1d3557" stroke-width="2"/>
+      <text x="140" y="40" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold" font-family="sans-serif">物流中心</text>
+      <rect x="40" y="70" width="40" height="30" fill="#a8dadc"/>
+      <rect x="195" y="70" width="40" height="30" fill="#a8dadc"/>
+      <line x1="60" y1="70" x2="60" y2="100" stroke="#1d3557" stroke-width="1"/>
+      <line x1="40" y1="85" x2="80" y2="85" stroke="#1d3557" stroke-width="1"/>
+      <line x1="215" y1="70" x2="215" y2="100" stroke="#1d3557" stroke-width="1"/>
+      <line x1="195" y1="85" x2="235" y2="85" stroke="#1d3557" stroke-width="1"/>
+      <rect x="40" y="110" width="20" height="20" fill="#d4a373"/>
+      <rect x="42" y="118" width="16" height="2" fill="#f4d35e"/>
+      <rect x="65" y="115" width="20" height="20" fill="#d4a373"/>
+      <rect x="67" y="123" width="16" height="2" fill="#f4d35e"/>
+    </g>
+  </svg>`,
+
+  // 家
+  home: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <path d="M40,75 L140,15 L240,75 L240,140 L40,140 Z" fill="#ffd9a0"/>
+      <path d="M30,80 L140,10 L250,80 L240,80 L140,20 L40,80 Z" fill="#d65a3a"/>
+      <rect x="115" y="90" width="50" height="50" fill="#8b4513"/>
+      <circle cx="155" cy="115" r="3" fill="#ffd60a"/>
+      <rect x="55" y="90" width="40" height="35" fill="#a8dadc"/>
+      <line x1="75" y1="90" x2="75" y2="125" stroke="#5a2d0c" stroke-width="2"/>
+      <line x1="55" y1="107" x2="95" y2="107" stroke="#5a2d0c" stroke-width="2"/>
+      <rect x="185" y="90" width="40" height="35" fill="#a8dadc"/>
+      <line x1="205" y1="90" x2="205" y2="125" stroke="#5a2d0c" stroke-width="2"/>
+      <line x1="185" y1="107" x2="225" y2="107" stroke="#5a2d0c" stroke-width="2"/>
+      <text x="140" y="55" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold" font-family="sans-serif">SWEET HOME</text>
+    </g>
+  </svg>`,
+};
+
+// 物流旅程：每一段配置
+const JOURNEY_STAGES = [
+  { name: '出库打包',   icon: '📦', vehicle: 'truck_van',  bg: 'warehouse',     duration: 1500, sound: 'whoosh' },
+  { name: '高铁运输',   icon: '🚄', vehicle: 'hsr',        bg: 'countryside',   duration: 1700, sound: 'train' },
+  { name: '空运中',     icon: '✈️', vehicle: 'plane',      bg: 'sky',           duration: 1700, sound: 'plane' },
+  { name: '城市配送',   icon: '🚚', vehicle: 'truck_van',  bg: 'city',          duration: 1500, sound: 'truck' },
+  { name: '小哥派送',   icon: '🛵', vehicle: 'motorcycle', bg: 'suburb',        duration: 1400, sound: 'moto' },
+  { name: '送货上门',   icon: '🛺', vehicle: 'tricycle',   bg: 'neighborhood',  duration: 1400, sound: 'truck' },
+];
+
+// ============================================================
 // 玩具数据
 // ============================================================
 const TOYS = [
@@ -1473,6 +1900,47 @@ const SFX = {
     osc.connect(gain); gain.connect(ctx.destination);
     osc.start(); osc.stop(ctx.currentTime + 1.5);
   },
+  train: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    // 高铁滑过的呼啸声
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 1.2);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.5);
+    // 高音叮咚
+    setTimeout(() => playTone(1200, 0.1, 'sine', 0.1), 200);
+    setTimeout(() => playTone(900, 0.15, 'sine', 0.1), 350);
+  },
+  plane: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.5);
+    osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 1.6);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.7);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.7);
+  },
+  moto: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    // 摩托车突突突
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => playTone(180 + Math.random()*60, 0.06, 'square', 0.08), i * 120);
+    }
+  },
+  ding: () => {
+    playTone(1200, 0.15, 'sine', 0.18);
+    setTimeout(() => playTone(1600, 0.2, 'sine', 0.15), 80);
+  },
 };
 
 // ============================================================
@@ -1480,11 +1948,12 @@ const SFX = {
 // ============================================================
 const $ = id => document.getElementById(id);
 const sceneDoor = $('sceneDoor');
+const sceneMap = $('sceneMap');
 const sceneUnbox = $('sceneUnbox');
 const sceneReveal = $('sceneReveal');
 
 function showScene(scene) {
-  [sceneDoor, sceneUnbox, sceneReveal].forEach(s => s.classList.add('hidden'));
+  [sceneDoor, sceneMap, sceneUnbox, sceneReveal].forEach(s => s.classList.add('hidden'));
   scene.classList.remove('hidden');
 }
 
@@ -1492,6 +1961,129 @@ function updateTopbar() {
   $('coinCount').textContent = state.coins;
   $('collectionCount').textContent = Object.keys(state.collection).length;
   $('collectionTotal').textContent = TOYS.length;
+}
+
+// ============================================================
+// 物流地图动画
+// ============================================================
+function buildMapDecor(stage) {
+  const decor = $('mapDecor');
+  decor.innerHTML = '';
+  const bg = stage.bg;
+
+  // 通用云朵（除了仓库内）
+  if (bg !== 'warehouse') {
+    decor.innerHTML += `<div class="cloud cloud-1"></div><div class="cloud cloud-2"></div><div class="cloud cloud-3"></div>`;
+  }
+
+  if (bg === 'countryside') {
+    decor.innerHTML += `
+      <div class="grass-field"></div>
+      <div class="ground-track"></div>
+      <div class="mountain mountain-1"></div>
+      <div class="mountain mountain-2"></div>
+      <div class="mountain mountain-3"></div>
+    `;
+  } else if (bg === 'sky') {
+    decor.innerHTML += `
+      <div class="grass-field" style="opacity:0.4"></div>
+      <div class="mountain mountain-1" style="opacity:0.5"></div>
+      <div class="mountain mountain-3" style="opacity:0.5"></div>
+    `;
+  } else if (bg === 'city') {
+    decor.innerHTML += `
+      <div class="building-skyline"></div>
+      <div class="ground-road"></div>
+    `;
+  } else if (bg === 'suburb' || bg === 'neighborhood') {
+    decor.innerHTML += `<div class="ground-road"></div>`;
+    if (bg === 'neighborhood') {
+      // 显示终点的家
+      const home = document.createElement('div');
+      home.className = 'home-target';
+      home.innerHTML = VEHICLE_SVGS.home;
+      decor.appendChild(home);
+    }
+  } else if (bg === 'warehouse') {
+    decor.innerHTML += `
+      <div class="ground-road"></div>
+    `;
+    // 把仓库本身放在背景里
+    const wh = document.createElement('div');
+    wh.style.cssText = 'position:absolute; left:5%; bottom:30%; width:280px; height:160px; opacity:0.95; z-index:2;';
+    wh.innerHTML = VEHICLE_SVGS.warehouse;
+    decor.appendChild(wh);
+  }
+}
+
+function buildMapProgress(currentIdx) {
+  const progress = $('mapProgress');
+  progress.innerHTML = '';
+  // 起点 📦 + 6个阶段 + 终点 🏠
+  const dots = [
+    { icon: '📦', label: '起点' },
+    ...JOURNEY_STAGES.map(s => ({ icon: s.icon, label: s.name })),
+    { icon: '🏠', label: '到家' },
+  ];
+  dots.forEach((d, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'map-progress-dot';
+    if (i < currentIdx + 1) dot.classList.add('done');
+    else if (i === currentIdx + 1) dot.classList.add('active');
+    dot.textContent = d.icon;
+    progress.appendChild(dot);
+  });
+}
+
+async function playJourney() {
+  showScene(sceneMap);
+
+  for (let i = 0; i < JOURNEY_STAGES.length; i++) {
+    const stage = JOURNEY_STAGES[i];
+
+    // 切换背景
+    $('mapBg').className = 'map-bg-layer map-bg-' + stage.bg;
+    buildMapDecor(stage);
+    buildMapProgress(i);
+    $('stageTitle').textContent = stage.icon + ' ' + stage.name;
+
+    // 重置车辆
+    const vehicle = $('mapVehicle');
+    vehicle.classList.remove('crossing', 'arriving', 'flying');
+    vehicle.innerHTML = VEHICLE_SVGS[stage.vehicle];
+    if (stage.vehicle === 'plane') vehicle.classList.add('flying');
+
+    // 触发滑动动画
+    void vehicle.offsetWidth;
+    if (i === JOURNEY_STAGES.length - 1) {
+      vehicle.classList.add('arriving');
+    } else {
+      vehicle.classList.add('crossing');
+    }
+
+    // 播放音效
+    if (SFX[stage.sound]) SFX[stage.sound]();
+
+    // 等待此阶段完成
+    await new Promise(r => setTimeout(r, stage.duration));
+  }
+
+  // 旅程结束 -> 门口场景，包裹已经在门口
+  buildMapProgress(JOURNEY_STAGES.length);
+  await new Promise(r => setTimeout(r, 400));
+  arriveAtDoor();
+}
+
+function arriveAtDoor() {
+  showScene(sceneDoor);
+  $('truck').style.display = 'none';
+  $('shopRow').style.display = 'none';
+  $('packageDoor').innerHTML = svgWrap(currentBox.pkg);
+  $('packageDoor').style.display = 'block';
+  $('doorHint').style.display = 'block';
+  $('doorTitle').textContent = '快递到啦！🎉';
+  SFX.doorbell();
+  setTimeout(() => SFX.ding(), 400);
 }
 
 // ============================================================
@@ -1562,7 +2154,7 @@ function showShop() {
           state.coins -= box.cost;
           updateTopbar(); saveState();
           currentBox = box;
-          startDelivery();
+          playJourney();
         }
       });
     }
