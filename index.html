@@ -55,6 +55,83 @@
     white-space: nowrap;
   }
   .collection-btn:active { transform: scale(0.95); }
+  .topbar-left { display: flex; gap: clamp(6px, 1.5vmin, 12px); align-items: center; }
+  .icon-btn {
+    background: rgba(255,255,255,0.9);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: clamp(36px, 7vmin, 50px); height: clamp(36px, 7vmin, 50px);
+    font-size: clamp(16px, 3vmin, 22px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  .bubble-counter {
+    position: absolute;
+    top: clamp(54px, 10vmin, 100px); right: clamp(10px, 3vmin, 30px);
+    background: rgba(255,107,157,0.95); color: #fff;
+    border-radius: 999px;
+    padding: clamp(5px, 1.2vmin, 9px) clamp(12px, 2.6vmin, 20px);
+    font-size: clamp(13px, 2.8vmin, 20px);
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 9;
+    border: 3px solid #fff;
+    pointer-events: none;
+  }
+  .bubble-counter.full {
+    background: linear-gradient(90deg, #f39c12, #f1c40f, #f39c12);
+    background-size: 200% 100%;
+    animation: gold-shimmer 1.2s linear infinite;
+  }
+
+  .toy-detail-content {
+    width: min(86%, 400px);
+    background: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
+    border-radius: 24px;
+    border: 6px solid #ff6b9d;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    padding: clamp(18px, 3.5vmin, 30px) clamp(16px, 3vmin, 24px);
+    display: flex; flex-direction: column; align-items: center;
+    position: relative;
+  }
+  .toy-detail-svg {
+    width: clamp(160px, 50vmin, 260px);
+    height: clamp(160px, 50vmin, 260px);
+    animation: toy-pop 0.6s cubic-bezier(.5,1.8,.4,1);
+  }
+  .toy-detail-svg svg { width: 100%; height: 100%; }
+  .toy-detail-name {
+    font-size: clamp(20px, 4.5vmin, 32px);
+    font-weight: bold; margin-top: 8px; color: #333;
+  }
+  .toy-detail-stats {
+    margin-top: 12px;
+    color: #666;
+    font-size: clamp(14px, 2.8vmin, 18px);
+    line-height: 1.7;
+    text-align: center;
+  }
+  .toy-detail-content .close-btn {
+    position: absolute; top: 10px; right: 10px;
+  }
+  .collection-cell.unlocked { cursor: pointer; }
+  .collection-cell.unlocked:active { transform: scale(0.94); }
+
+  .bonus-text {
+    margin-top: clamp(4px, 1vmin, 8px);
+    font-size: clamp(14px, 2.8vmin, 20px);
+    color: #ff6b9d;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #fff;
+    z-index: 5;
+    animation: name-bounce 0.6s ease-out 1.2s backwards;
+  }
 
   /* 场景 */
   .scene {
@@ -947,7 +1024,10 @@
 <body>
 <div id="game">
   <div class="topbar">
-    <div class="coin-display">⭐ <span id="coinCount">0</span></div>
+    <div class="topbar-left">
+      <div class="coin-display">⭐ <span id="coinCount">0</span></div>
+      <button class="icon-btn" id="muteBtn" aria-label="静音">🔊</button>
+    </div>
     <div class="collection-btn" id="openCollection">📖 图鉴 <span id="collectionCount">0</span>/<span id="collectionTotal">0</span></div>
   </div>
 
@@ -1004,6 +1084,7 @@
       <div class="cutter" id="cutter">✂️</div>
     </div>
     <div class="tap-hint" id="unboxHint">👆 划开胶带</div>
+    <div class="bubble-counter" id="bubbleCounter" style="display:none">0/49</div>
     <div class="table"></div>
   </div>
 
@@ -1015,6 +1096,7 @@
     <div class="toy-name" id="toyName">玩具</div>
     <div class="rarity-badge" id="rarityBadge">普通</div>
     <div class="price-tag" id="rewardCoins">+0 ⭐</div>
+    <div class="bonus-text" id="bonusText">🎉 全部戳爆 +5⭐</div>
     <button class="big-btn green" id="continueBtn">再来一个！</button>
   </div>
 
@@ -1027,6 +1109,17 @@
       </div>
       <div class="progress-text" id="progressText">已收集 0/0 件玩具</div>
       <div class="collection-grid" id="collectionGrid"></div>
+    </div>
+  </div>
+
+  <!-- 玩具详情 -->
+  <div class="collection-modal hidden" id="toyDetailModal">
+    <div class="toy-detail-content">
+      <button class="close-btn" id="closeToyDetail">×</button>
+      <div class="toy-detail-svg" id="toyDetailSvg"></div>
+      <div class="toy-detail-name" id="toyDetailName"></div>
+      <div class="rarity-badge" id="toyDetailRarity"></div>
+      <div class="toy-detail-stats" id="toyDetailStats"></div>
     </div>
   </div>
 </div>
@@ -1856,7 +1949,7 @@ function svgWrap(content) {
 // 状态 + 持久化
 // ============================================================
 const STORAGE_KEY = 'zucker-game-save-v2';
-let state = { coins: 20, collection: {} };
+let state = { coins: 20, collection: {}, firstAt: {}, muted: false };
 
 function loadState() {
   try {
@@ -1865,6 +1958,8 @@ function loadState() {
       const obj = JSON.parse(saved);
       state.coins = obj.coins ?? 20;
       state.collection = obj.collection ?? {};
+      state.firstAt = obj.firstAt ?? {};
+      state.muted = obj.muted ?? false;
     }
   } catch(e) {}
 }
@@ -1877,10 +1972,15 @@ function saveState() {
 // ============================================================
 let audioCtx = null;
 function getCtx() {
+  if (state.muted) return null;
   if (!audioCtx) {
     try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
   }
   return audioCtx;
+}
+function vibrate(pattern) {
+  if (state.muted) return;
+  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch(e) {} }
 }
 function playTone(freq, duration, type='sine', volume=0.2) {
   const ctx = getCtx(); if (!ctx) return;
@@ -2223,6 +2323,8 @@ $('packageDoor').addEventListener('click', () => {
 
 function setupUnboxing() {
   unboxStep = 0;
+  poppedCount = 0;
+  popBonusGiven = false;
   const box = $('bigBox');
   box.classList.remove('box-open');
   $('tape').classList.remove('cut');
@@ -2234,6 +2336,8 @@ function setupUnboxing() {
   $('cutter').style.display = 'block';
   $('unboxTitle').textContent = '拆开它！';
   $('unboxHint').textContent = '👆 划开胶带';
+  $('bubbleCounter').style.display = 'none';
+  $('bubbleCounter').classList.remove('full');
   box.onclick = onCutTape;
 }
 
@@ -2241,6 +2345,7 @@ function onCutTape() {
   if (unboxStep !== 0) return;
   unboxStep = 1;
   SFX.cut();
+  vibrate(40);
   $('cutter').classList.add('cutting');
   $('tape').classList.add('cut');
 
@@ -2261,7 +2366,8 @@ function onOpenFlaps() {
   setTimeout(() => {
     const wrap = document.createElement('div');
     wrap.className = 'bubble-wrap';
-    for (let i = 0; i < 49; i++) {
+    totalBubbles = 49;
+    for (let i = 0; i < totalBubbles; i++) {
       const b = document.createElement('div');
       b.className = 'bubble';
       b.addEventListener('click', onPopBubble);
@@ -2270,7 +2376,13 @@ function onOpenFlaps() {
     }
     wrap.addEventListener('touchmove', handleTouchPop, { passive: true });
     $('bigBox').appendChild(wrap);
-    $('unboxHint').textContent = '👆 戳破气泡膜！';
+    $('unboxHint').textContent = '👆 戳破全部气泡膜！';
+    poppedCount = 0;
+    popBonusGiven = false;
+    const counter = $('bubbleCounter');
+    counter.textContent = `0/${totalBubbles}`;
+    counter.classList.remove('full');
+    counter.style.display = 'block';
   }, 600);
 }
 
@@ -2283,14 +2395,24 @@ function handleTouchPop(e) {
   }
 }
 
+let poppedCount = 0;
+let totalBubbles = 49;
+let popBonusGiven = false;
+
 function onPopBubble() {
   if (this.classList.contains('popped')) return;
   this.classList.add('popped');
   SFX.pop();
-  const total = $('bigBox').querySelectorAll('.bubble').length;
-  const popped = $('bigBox').querySelectorAll('.bubble.popped').length;
-  if (popped >= Math.ceil(total * 0.55)) {
-    setTimeout(reveal, 400);
+  vibrate(8);
+  poppedCount++;
+  const counter = $('bubbleCounter');
+  counter.textContent = `${poppedCount}/${totalBubbles}`;
+  if (poppedCount >= totalBubbles && !popBonusGiven) {
+    popBonusGiven = true;
+    counter.classList.add('full');
+    SFX.ding();
+    vibrate([60, 40, 80]);
+    setTimeout(reveal, 500);
   }
 }
 
@@ -2310,12 +2432,21 @@ function rollToy() {
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+const POP_BONUS = 5;
+const VIBE_REVEAL = {
+  common:    [30],
+  rare:      [40, 50, 40],
+  epic:      [60, 50, 60, 50, 80],
+  legendary: [80, 50, 80, 50, 100, 50, 120],
+};
+
 function reveal() {
   const toy = rollToy();
   const info = RARITY_INFO[toy.rarity];
 
   state.collection[toy.id] = (state.collection[toy.id] || 0) + 1;
-  state.coins += info.coins;
+  if (!state.firstAt[toy.id]) state.firstAt[toy.id] = Date.now();
+  state.coins += info.coins + POP_BONUS;
   saveState();
   updateTopbar();
 
@@ -2328,6 +2459,8 @@ function reveal() {
   badge.textContent = info.name + (toy.rarity === 'legendary' ? ' ✨' : '');
   badge.className = 'rarity-badge ' + info.class;
   $('rewardCoins').textContent = '+' + info.coins + ' ⭐';
+  $('bonusText').textContent = `🎉 全部戳爆 +${POP_BONUS}⭐`;
+  $('bonusText').style.display = 'block';
 
   const glow = $('legendaryGlow');
   if (toy.rarity === 'legendary' || toy.rarity === 'epic') {
@@ -2338,6 +2471,7 @@ function reveal() {
   }
 
   SFX.reveal(toy.rarity);
+  vibrate(VIBE_REVEAL[toy.rarity] || [30]);
   setTimeout(() => SFX.coin(), 500);
 
   spawnConfetti(toy.rarity === 'legendary' ? 80 : toy.rarity === 'epic' ? 50 : toy.rarity === 'rare' ? 30 : 15);
@@ -2408,6 +2542,7 @@ function renderCollection() {
         badge.textContent = '×' + owned;
         cell.appendChild(badge);
       }
+      cell.addEventListener('click', () => showToyDetail(toy));
     }
     grid.appendChild(cell);
   }
@@ -2415,10 +2550,53 @@ function renderCollection() {
   $('progressText').textContent = `已收集 ${collected}/${TOYS.length} 件玩具`;
 }
 
+function showToyDetail(toy) {
+  const info = RARITY_INFO[toy.rarity];
+  const owned = state.collection[toy.id] || 0;
+  const firstAt = state.firstAt[toy.id];
+  $('toyDetailSvg').innerHTML = svgWrap(toy.svg);
+  $('toyDetailName').textContent = toy.name;
+  const badge = $('toyDetailRarity');
+  badge.textContent = info.name + (toy.rarity === 'legendary' ? ' ✨' : '');
+  badge.className = 'rarity-badge ' + info.class;
+  let stats = `获得 ${owned} 次 · 单抽奖励 ${info.coins} ⭐`;
+  if (firstAt) {
+    const d = new Date(firstAt);
+    const ymd = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    stats += `<br>首次获得：${ymd}`;
+  }
+  $('toyDetailStats').innerHTML = stats;
+  $('toyDetailModal').classList.remove('hidden');
+}
+
+$('closeToyDetail').addEventListener('click', () => {
+  $('toyDetailModal').classList.add('hidden');
+});
+$('toyDetailModal').addEventListener('click', e => {
+  if (e.target === $('toyDetailModal')) $('toyDetailModal').classList.add('hidden');
+});
+
+// ============================================================
+// 静音 / 震动开关
+// ============================================================
+function applyMute() {
+  $('muteBtn').textContent = state.muted ? '🔇' : '🔊';
+}
+$('muteBtn').addEventListener('click', () => {
+  state.muted = !state.muted;
+  applyMute();
+  saveState();
+  if (!state.muted) {
+    getCtx();
+    vibrate(20);
+  }
+});
+
 // ============================================================
 // 启动
 // ============================================================
 loadState();
+applyMute();
 updateTopbar();
 showShop();
 
