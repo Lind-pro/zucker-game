@@ -1,0 +1,27 @@
+{
+  "name": "拆快递大冒险",
+  "short_name": "拆快递",
+  "description": "拆快递盲盒、收集玩具，让娃满足拆箱的快乐",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#ffd6e0",
+  "theme_color": "#ff6b9d",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
