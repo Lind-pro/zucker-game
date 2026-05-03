@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>拆快递大冒险 🎁</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    overflow: hidden;
+    background: linear-gradient(180deg, #87ceeb 0%, #ffd6e0 60%, #ffe8a3 100%);
+    touch-action: manipulation;
+  }
+  #game { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+  /* 顶部状态栏 */
+  .topbar {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; z-index: 10; pointer-events: none;
+  }
+  .coin-display, .collection-btn {
+    background: rgba(255,255,255,0.9);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 22px; font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    border: 3px solid #fff;
+    cursor: pointer;
+  }
+  .collection-btn:active { transform: scale(0.95); }
+
+  /* 场景 */
+  .scene {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.4s;
+  }
+  .scene.hidden { opacity: 0; pointer-events: none; }
+
+  /* 场景：门口 */
+  .door-scene {
+    background: linear-gradient(180deg, #87ceeb 0%, #c1e9f5 50%, #ffd6e0 100%);
+  }
+  .ground {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #c8a878 0%, #a07d4d 100%);
+  }
+  .ground::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+    background: rgba(0,0,0,0.15);
+  }
+  .house {
+    position: absolute; left: 0; right: 0; bottom: 30%;
+    height: 50%;
+    background: linear-gradient(180deg, #ffd9a0 0%, #f4c47a 100%);
+    border-top: 8px solid #c47b3a;
+  }
+  .house::before {
+    content: ""; position: absolute;
+    left: -10px; right: -10px; top: -70px;
+    height: 70px;
+    background: linear-gradient(180deg, #d65a3a 0%, #a8432a 100%);
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  }
+  .house-window {
+    position: absolute;
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, #a8dadc 0%, #6cb4d9 100%);
+    border: 6px solid #c47b3a;
+    border-radius: 4px;
+  }
+  .house-window::before, .house-window::after {
+    content: ""; position: absolute; background: #c47b3a;
+  }
+  .house-window::before {
+    left: 50%; top: -6px; bottom: -6px; width: 4px; transform: translateX(-50%);
+  }
+  .house-window::after {
+    top: 50%; left: -6px; right: -6px; height: 4px; transform: translateY(-50%);
+  }
+  .window-left { left: 12%; top: 30px; }
+  .window-right { right: 12%; top: 30px; }
+  .door {
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    width: 100px; height: 160px;
+    background: linear-gradient(180deg, #8b4513 0%, #6b3410 100%);
+    border-radius: 8px 8px 0 0;
+    border: 4px solid #5a2d0c; border-bottom: none;
+  }
+  .door::after {
+    content: ""; position: absolute; right: 14px; top: 55%;
+    width: 10px; height: 10px; border-radius: 50%; background: #ffd700;
+    box-shadow: 0 0 4px #b8860b;
+  }
+  .door-panel {
+    position: absolute; left: 50%; top: 20%; transform: translateX(-50%);
+    width: 60%; height: 30%;
+    border: 3px solid #5a2d0c;
+    border-radius: 4px;
+  }
+
+  .delivery-truck {
+    position: absolute;
+    left: -300px; bottom: 28%;
+    width: 240px; height: 140px;
+    z-index: 2;
+  }
+  .delivery-truck.driving { animation: drive-in 2s ease-out forwards; }
+  .delivery-truck.leaving { animation: drive-out 1.2s ease-in forwards; }
+  @keyframes drive-in {
+    0% { left: -300px; }
+    100% { left: 22%; }
+  }
+  @keyframes drive-out {
+    0% { left: 22%; }
+    100% { left: 100%; }
+  }
+  .truck-bounce { animation: truck-bounce 0.4s ease-in-out infinite; }
+  @keyframes truck-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .package-on-doorstep {
+    position: absolute; left: 50%; bottom: 28%;
+    transform: translateX(-50%);
+    width: 130px; height: 130px;
+    animation: drop-in 0.6s ease-out;
+    cursor: pointer;
+    filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3));
+  }
+  @keyframes drop-in {
+    0% { transform: translateX(-50%) translateY(-200px) rotate(20deg); opacity: 0; }
+    60% { transform: translateX(-50%) translateY(20px) rotate(-5deg); }
+    100% { transform: translateX(-50%) translateY(0) rotate(0); opacity: 1; }
+  }
+  .package-on-doorstep:active { transform: translateX(-50%) scale(0.92); }
+
+  .doorbell {
+    position: absolute;
+    top: 22%; left: 50%; transform: translateX(-50%);
+    font-size: 60px;
+    animation: bell-ring 0.6s ease-in-out infinite;
+    text-shadow: 0 0 20px #fff;
+  }
+  @keyframes bell-ring {
+    0%, 100% { transform: translateX(-50%) rotate(-15deg); }
+    50% { transform: translateX(-50%) rotate(15deg); }
+  }
+
+  /* 场景：拆箱 */
+  .unbox-scene {
+    background: linear-gradient(180deg, #fff7e0 0%, #ffe0a8 100%);
+  }
+  .table {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #c08855 0%, #8b5a2b 100%);
+    border-top: 6px solid #6d3f17;
+  }
+  .package-big {
+    position: relative;
+    width: 320px; height: 320px;
+    margin-top: -10%;
+    perspective: 600px;
+  }
+  .box-body {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, #d4a373 0%, #b8845a 100%);
+    border-radius: 8px;
+    box-shadow:
+      0 12px 30px rgba(0,0,0,0.3),
+      inset 0 -10px 0 rgba(0,0,0,0.15),
+      inset 4px 0 0 rgba(0,0,0,0.08),
+      inset -4px 0 0 rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  /* 瓦楞纸纹理 */
+  .box-body::before {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0 12px,
+      rgba(0,0,0,0.05) 12px 14px,
+      transparent 14px 26px,
+      rgba(255,255,255,0.04) 26px 28px
+    );
+    pointer-events: none;
+  }
+  /* 快递面单 */
+  .shipping-label {
+    position: absolute;
+    top: 14%; right: 10%;
+    width: 44%; height: 36%;
+    background: #fafafa;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    padding: 6px;
+    display: flex; flex-direction: column;
+    font-family: "Courier New", monospace;
+    transform: rotate(-2deg);
+    z-index: 2;
+  }
+  .label-header {
+    height: 14px;
+    background: linear-gradient(90deg, #e63946 0%, #d62828 100%);
+    margin: -6px -6px 4px -6px;
+    border-radius: 3px 3px 0 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 9px; font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .label-line {
+    height: 3px; background: #333; margin-bottom: 3px; border-radius: 1px;
+  }
+  .label-line.short { width: 60%; }
+  .label-line.medium { width: 80%; }
+  .barcode {
+    margin-top: auto;
+    height: 22px;
+    background: repeating-linear-gradient(
+      90deg,
+      #000 0 1.5px, transparent 1.5px 3px,
+      #000 3px 4.5px, transparent 4.5px 7px,
+      #000 7px 9px, transparent 9px 11px,
+      #000 11px 13px, transparent 13px 16px
+    );
+  }
+  .stamp {
+    position: absolute;
+    top: -6px; right: -8px;
+    width: 36px; height: 36px;
+    border: 2.5px solid #d62828;
+    border-radius: 50%;
+    color: #d62828;
+    font-size: 8px;
+    font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(15deg);
+    background: rgba(255,255,255,0.6);
+    text-align: center;
+    line-height: 1;
+    opacity: 0.85;
+  }
+  .fragile-mark {
+    position: absolute;
+    top: 14%; left: 8%;
+    width: 60px; height: 70px;
+    z-index: 2;
+  }
+  .box-flap-left, .box-flap-right {
+    position: absolute; top: 0; width: 50%; height: 50%;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 12px, rgba(0,0,0,0.05) 12px 14px),
+      linear-gradient(180deg, #c79665 0%, #a07849 100%);
+    transition: transform 0.6s cubic-bezier(.5,1.6,.4,1);
+    transform-origin: top;
+    z-index: 4;
+  }
+  .box-flap-left { left: 0; border-radius: 8px 0 0 0; box-shadow: inset -2px 0 0 rgba(0,0,0,0.1); }
+  .box-flap-right { right: 0; border-radius: 0 8px 0 0; box-shadow: inset 2px 0 0 rgba(0,0,0,0.1); }
+  .box-open .box-flap-left { transform: rotateX(-160deg); }
+  .box-open .box-flap-right { transform: rotateX(-160deg); }
+
+  .tape {
+    position: absolute; top: 50%; left: -10px; right: -10px;
+    height: 38px; transform: translateY(-50%);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 30%, rgba(0,0,0,0.1) 100%),
+      repeating-linear-gradient(90deg, #f4d35e 0 20px, #e6c14b 20px 40px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5);
+    z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Courier New", monospace;
+    font-size: 11px; font-weight: bold;
+    color: #b8860b;
+    letter-spacing: 6px;
+  }
+  .tape::before, .tape::after {
+    content: "FRAGILE ★ FRAGILE ★ FRAGILE ★ FRAGILE";
+    white-space: nowrap;
+  }
+  .tape.cut {
+    animation: tape-split 0.5s forwards;
+  }
+  @keyframes tape-split {
+    to { clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); opacity: 0.6; }
+  }
+  .tape-right-half {
+    position: absolute; top: 50%; left: 50%; right: -10px;
+    height: 38px; transform: translateY(-50%);
+    background: repeating-linear-gradient(90deg, #f4d35e 0 20px, #e6c14b 20px 40px);
+    z-index: 5;
+    opacity: 0;
+  }
+  .tape.cut + .tape-right-half {
+    opacity: 0.7;
+    animation: tape-fall 0.5s 0.3s forwards;
+  }
+  @keyframes tape-fall {
+    to { transform: translateY(80px) rotate(15deg); opacity: 0; }
+  }
+
+  .cutter {
+    position: absolute;
+    font-size: 50px;
+    pointer-events: none;
+    z-index: 6;
+    transition: left 0.6s ease-out;
+    top: 50%; left: -60px; transform: translateY(-90%);
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+  }
+  .cutter.cutting { left: calc(100% + 20px); }
+
+  /* 真实气泡膜 ✨ */
+  .bubble-wrap {
+    position: absolute; inset: 4px;
+    border-radius: 8px;
+    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 1fr);
+    gap: 1px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(220,240,255,0.25) 50%, rgba(255,255,255,0.3) 100%);
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow:
+      inset 0 0 30px rgba(255,255,255,0.4),
+      0 0 0 2px rgba(0,0,0,0.05);
+    z-index: 7;
+    overflow: hidden;
+  }
+  /* 透明塑料表面光泽 */
+  .bubble-wrap::before {
+    content: ""; position: absolute;
+    top: 0; left: -50%; width: 60%; height: 100%;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+    pointer-events: none;
+    transform: skewX(-20deg);
+  }
+  .bubble {
+    position: relative;
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse 30% 25% at 32% 28%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.55) 30%, transparent 60%),
+      radial-gradient(circle at 50% 50%, rgba(225,240,255,0.45) 0%, rgba(195,220,245,0.4) 60%, rgba(160,195,225,0.55) 100%);
+    box-shadow:
+      inset -1px -2px 3px rgba(70,130,180,0.35),
+      inset 1px 1px 2px rgba(255,255,255,0.7),
+      0 1px 1px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.08s;
+  }
+  .bubble::after {
+    content: ""; position: absolute;
+    top: 60%; right: 18%; width: 22%; height: 14%;
+    background: rgba(255,255,255,0.5);
+    border-radius: 50%;
+    filter: blur(0.5px);
+  }
+  .bubble:active { transform: scale(0.85); }
+  .bubble.popped {
+    background:
+      radial-gradient(circle at 50% 50%, rgba(180,200,220,0.15) 0%, rgba(150,180,200,0.25) 100%);
+    box-shadow: inset 0 1px 2px rgba(100,130,160,0.2);
+    transform: scale(0.7);
+    opacity: 0.5;
+    animation: bubble-pop 0.2s ease-out;
+  }
+  .bubble.popped::after { display: none; }
+  @keyframes bubble-pop {
+    0% { transform: scale(1.1); }
+    50% { transform: scale(0.5); }
+    100% { transform: scale(0.7); }
+  }
+
+  /* 玩具揭晓 */
+  .reveal-scene {
+    background: radial-gradient(circle at center, #fff8d6 0%, #ffd9a0 70%, #ff9f7a 100%);
+  }
+  .reveal-bg-rays {
+    position: absolute; inset: 0;
+    background: conic-gradient(
+      from 0deg,
+      rgba(255,255,255,0.4) 0deg, transparent 15deg,
+      rgba(255,255,255,0.4) 30deg, transparent 45deg,
+      rgba(255,255,255,0.4) 60deg, transparent 75deg,
+      rgba(255,255,255,0.4) 90deg, transparent 105deg,
+      rgba(255,255,255,0.4) 120deg, transparent 135deg,
+      rgba(255,255,255,0.4) 150deg, transparent 165deg,
+      rgba(255,255,255,0.4) 180deg, transparent 195deg,
+      rgba(255,255,255,0.4) 210deg, transparent 225deg,
+      rgba(255,255,255,0.4) 240deg, transparent 255deg,
+      rgba(255,255,255,0.4) 270deg, transparent 285deg,
+      rgba(255,255,255,0.4) 300deg, transparent 315deg,
+      rgba(255,255,255,0.4) 330deg, transparent 345deg
+    );
+    animation: rays-spin 8s linear infinite;
+  }
+  @keyframes rays-spin { to { transform: rotate(360deg); } }
+  .toy-reveal {
+    width: 260px; height: 260px;
+    animation: toy-pop 1.2s cubic-bezier(.5,1.8,.4,1) forwards;
+    filter: drop-shadow(0 12px 20px rgba(0,0,0,0.3));
+    z-index: 5;
+  }
+  .toy-reveal svg { width: 100%; height: 100%; }
+  .toy-reveal.legendary {
+    animation: toy-pop 1.2s cubic-bezier(.5,1.8,.4,1) forwards, legendary-shine 1.5s ease-in-out infinite 1.2s;
+  }
+  @keyframes toy-pop {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    60% { transform: scale(1.3) rotate(20deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes legendary-shine {
+    0%, 100% { filter: drop-shadow(0 0 30px gold) drop-shadow(0 12px 20px rgba(0,0,0,0.3)); }
+    50% { filter: drop-shadow(0 0 60px gold) drop-shadow(0 0 80px #ffeb3b) drop-shadow(0 12px 20px rgba(0,0,0,0.3)); }
+  }
+  .toy-name {
+    margin-top: 30px;
+    font-size: 36px; font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 #ff6b9d, 6px 6px 0 rgba(0,0,0,0.2);
+    z-index: 5;
+    animation: name-bounce 0.6s ease-out 0.8s backwards;
+  }
+  .rarity-badge {
+    margin-top: 12px;
+    padding: 8px 24px;
+    border-radius: 999px;
+    font-size: 22px; font-weight: bold;
+    color: #fff;
+    z-index: 5;
+    animation: name-bounce 0.6s ease-out 1.0s backwards;
+  }
+  @keyframes name-bounce {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .rarity-common { background: linear-gradient(90deg, #95a5a6, #7f8c8d); }
+  .rarity-rare { background: linear-gradient(90deg, #3498db, #2980b9); }
+  .rarity-epic { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
+  .rarity-legendary { background: linear-gradient(90deg, #f39c12, #f1c40f, #f39c12);
+    background-size: 200% 100%; animation: gold-shimmer 2s linear infinite; }
+  @keyframes gold-shimmer { to { background-position: 200% 0; } }
+
+  .big-btn {
+    margin-top: 30px;
+    padding: 18px 48px;
+    font-size: 28px; font-weight: bold;
+    color: #fff;
+    background: linear-gradient(180deg, #ff6b9d 0%, #ff4081 100%);
+    border: 4px solid #fff;
+    border-radius: 999px;
+    box-shadow: 0 8px 0 #c2185b, 0 12px 20px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 6;
+    transition: transform 0.1s;
+  }
+  .big-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 4px 0 #c2185b, 0 6px 12px rgba(0,0,0,0.2);
+  }
+  .big-btn.green {
+    background: linear-gradient(180deg, #4ecdc4 0%, #2ec4b6 100%);
+    box-shadow: 0 8px 0 #1a8e85, 0 12px 20px rgba(0,0,0,0.2);
+  }
+  .big-btn.green:active {
+    box-shadow: 0 4px 0 #1a8e85, 0 6px 12px rgba(0,0,0,0.2);
+  }
+
+  /* 收藏图鉴 */
+  .collection-modal {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .collection-modal.hidden { display: none; }
+  .collection-content {
+    width: min(92%, 700px); max-height: 88vh;
+    background: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
+    border-radius: 24px;
+    border: 6px solid #ff6b9d;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    padding: 20px;
+    display: flex; flex-direction: column;
+  }
+  .collection-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .collection-title {
+    font-size: 32px; font-weight: bold; color: #ff3366;
+    text-shadow: 2px 2px 0 #ffd6e0;
+  }
+  .close-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%; border: 3px solid #fff;
+    background: #ff6b9d; color: #fff;
+    font-size: 24px; font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #c2185b;
+  }
+  .close-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #c2185b; }
+  .progress-text { font-size: 18px; color: #666; margin-bottom: 12px; }
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    overflow-y: auto;
+    padding: 8px;
+    flex: 1;
+  }
+  .collection-cell {
+    aspect-ratio: 1;
+    background: #f0f0f0;
+    border: 3px solid #ddd;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .collection-cell svg { width: 85%; height: 85%; }
+  .collection-cell.unlocked.common { background: #ecf0f1; border-color: #95a5a6; }
+  .collection-cell.unlocked.rare { background: #d6eaf8; border-color: #3498db; }
+  .collection-cell.unlocked.epic { background: #e8daef; border-color: #9b59b6; }
+  .collection-cell.unlocked.legendary {
+    background: linear-gradient(135deg, #fff8d6, #ffd700);
+    border-color: #f39c12;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  }
+  .collection-cell.locked::before {
+    content: "?"; color: #999; font-size: 32px; font-weight: bold;
+  }
+  .count-badge {
+    position: absolute; bottom: 2px; right: 4px;
+    font-size: 14px; color: #555;
+    background: rgba(255,255,255,0.85);
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-weight: bold;
+  }
+
+  .confetti {
+    position: absolute;
+    width: 12px; height: 12px;
+    pointer-events: none;
+    animation: confetti-fall 2s linear forwards;
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+  }
+
+  .price-tag {
+    margin-top: 14px;
+    font-size: 24px;
+    color: #d35400;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #fff;
+  }
+
+  .shop-row {
+    display: flex; gap: 16px; margin-top: 24px;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .shop-card {
+    background: rgba(255,255,255,0.95);
+    border: 4px solid #ff6b9d;
+    border-radius: 20px;
+    padding: 14px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s;
+    width: 130px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+  }
+  .shop-card:active { transform: scale(0.95); }
+  .shop-card.locked { opacity: 0.6; cursor: not-allowed; border-color: #aaa; }
+  .shop-card .pkg-icon { width: 80px; height: 80px; margin: 0 auto; }
+  .shop-card .pkg-icon svg { width: 100%; height: 100%; }
+  .shop-card .label { font-size: 18px; font-weight: bold; margin-top: 6px; color: #333; }
+  .shop-card .cost { font-size: 18px; color: #d35400; font-weight: bold; margin-top: 4px; }
+
+  .scene-title {
+    position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 32px; font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 #ff6b9d, 4px 4px 0 rgba(0,0,0,0.2);
+    z-index: 5;
+    text-align: center;
+  }
+
+  .float-text {
+    position: absolute;
+    font-size: 32px; font-weight: bold;
+    color: #ffd700;
+    text-shadow: 2px 2px 0 #d35400;
+    pointer-events: none;
+    animation: float-up 1.2s ease-out forwards;
+    z-index: 50;
+  }
+  @keyframes float-up {
+    0% { transform: translateY(0) scale(0.5); opacity: 0; }
+    20% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+    100% { transform: translateY(-100px) scale(1); opacity: 0; }
+  }
+
+  .tap-hint {
+    position: absolute; bottom: 12%;
+    left: 50%; transform: translateX(-50%);
+    font-size: 24px; font-weight: bold;
+    color: #fff;
+    text-shadow: 2px 2px 0 #ff6b9d;
+    animation: tap-hint-pulse 1s ease-in-out infinite;
+    pointer-events: none;
+    text-align: center;
+    z-index: 8;
+  }
+  @keyframes tap-hint-pulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.1); }
+  }
+
+  .legendary-glow {
+    position: absolute;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, transparent 70%);
+    animation: glow-pulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes glow-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.3); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="topbar">
+    <div class="coin-display">⭐ <span id="coinCount">0</span></div>
+    <div class="collection-btn" id="openCollection">📖 图鉴 <span id="collectionCount">0</span>/<span id="collectionTotal">0</span></div>
+  </div>
+
+  <!-- 场景：门口 -->
+  <div class="scene door-scene" id="sceneDoor">
+    <div class="house">
+      <div class="house-window window-left"></div>
+      <div class="house-window window-right"></div>
+    </div>
+    <div class="ground"></div>
+    <div class="door"><div class="door-panel"></div></div>
+    <div class="scene-title" id="doorTitle">叮咚！快递来啦 🚚</div>
+    <div class="delivery-truck" id="truck"></div>
+    <div class="package-on-doorstep" id="packageDoor" style="display:none"></div>
+    <div class="tap-hint" id="doorHint" style="display:none">👆 点一下打开</div>
+    <div class="shop-row" id="shopRow" style="position:absolute; bottom:32px; left:0; right:0; display:none; z-index:9"></div>
+  </div>
+
+  <!-- 场景：拆箱 -->
+  <div class="scene unbox-scene hidden" id="sceneUnbox">
+    <div class="scene-title" id="unboxTitle">拆开它！</div>
+    <div class="package-big" id="bigBox">
+      <div class="box-body">
+        <div class="shipping-label">
+          <div class="label-header">★ EXPRESS ★</div>
+          <div class="label-line medium"></div>
+          <div class="label-line short"></div>
+          <div class="label-line medium"></div>
+          <div class="label-line short"></div>
+          <div class="barcode"></div>
+          <div class="stamp">已签收</div>
+        </div>
+        <div class="fragile-mark">
+          <svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="56" height="66" fill="none" stroke="#d62828" stroke-width="3" rx="3"/>
+            <path d="M30 14 L20 30 L26 30 L18 50 L42 30 L34 30 L40 14 Z" fill="#d62828"/>
+            <text x="30" y="64" text-anchor="middle" fill="#d62828" font-size="9" font-weight="bold" font-family="sans-serif">易碎</text>
+          </svg>
+        </div>
+      </div>
+      <div class="box-flap-left"></div>
+      <div class="box-flap-right"></div>
+      <div class="tape" id="tape"></div>
+      <div class="tape-right-half"></div>
+      <div class="cutter" id="cutter">✂️</div>
+    </div>
+    <div class="tap-hint" id="unboxHint">👆 划开胶带</div>
+    <div class="table"></div>
+  </div>
+
+  <!-- 场景：揭晓 -->
+  <div class="scene reveal-scene hidden" id="sceneReveal">
+    <div class="reveal-bg-rays"></div>
+    <div id="legendaryGlow"></div>
+    <div class="toy-reveal" id="toyReveal"></div>
+    <div class="toy-name" id="toyName">玩具</div>
+    <div class="rarity-badge" id="rarityBadge">普通</div>
+    <div class="price-tag" id="rewardCoins">+0 ⭐</div>
+    <button class="big-btn green" id="continueBtn">再来一个！</button>
+  </div>
+
+  <!-- 收藏图鉴 -->
+  <div class="collection-modal hidden" id="collectionModal">
+    <div class="collection-content">
+      <div class="collection-header">
+        <div class="collection-title">📖 我的玩具图鉴</div>
+        <button class="close-btn" id="closeCollection">×</button>
+      </div>
+      <div class="progress-text" id="progressText">已收集 0/0 件玩具</div>
+      <div class="collection-grid" id="collectionGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SVG 公共定义
+// ============================================================
+const SVG_DEFS = `<defs>
+  <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-opacity="0.3"/>
+  </filter>
+  <radialGradient id="shine" cx="30%" cy="25%" r="50%">
+    <stop offset="0%" stop-color="#fff" stop-opacity="0.7"/>
+    <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+</defs>`;
+
+// ============================================================
+// 玩具 SVG 库（手绘矢量插画）
+// ============================================================
+const TOY_SVGS = {
+  // ============ 普通 ============
+  car_red: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="80" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M25,140 L25,115 Q25,98 45,98 L65,98 L82,55 Q86,45 100,45 L130,45 Q146,45 155,58 L172,98 L180,103 Q185,108 185,118 L185,150 Q185,158 175,158 L165,158 A20,20 0 0,0 125,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q25,158 25,148 Z" fill="#e63946"/>
+    <path d="M82,55 L72,98 H170 L160,68 L155,58 Q150,55 145,55 Z" fill="#1d3557" opacity="0.18"/>
+    <rect x="82" y="60" width="58" height="38" rx="5" fill="#a8dadc"/>
+    <line x1="111" y1="60" x2="111" y2="98" stroke="#1d3557" stroke-width="2.5"/>
+    <ellipse cx="92" cy="72" rx="20" ry="8" fill="#fff" opacity="0.6"/>
+    <rect x="20" y="118" width="160" height="3" fill="#000" opacity="0.25"/>
+    <circle cx="55" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="55" cy="158" r="5" fill="#495057"/>
+    <circle cx="145" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="5" fill="#495057"/>
+    <rect x="172" y="124" width="14" height="9" rx="2" fill="#ffd60a"/>
+    <rect x="14" y="124" width="14" height="6" rx="2" fill="#fff" opacity="0.95"/>
+  </g>`,
+
+  car_taxi: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="80" ry="6" fill="#000" opacity="0.2"/>
+    <rect x="78" y="22" width="44" height="14" rx="2" fill="#1d3557"/>
+    <text x="100" y="33" text-anchor="middle" fill="#ffd60a" font-size="11" font-weight="bold" font-family="sans-serif">TAXI</text>
+    <rect x="98" y="36" width="4" height="9" fill="#1d3557"/>
+    <path d="M25,140 L25,115 Q25,98 45,98 L65,98 L82,55 Q86,45 100,45 L130,45 Q146,45 155,58 L172,98 L180,103 Q185,108 185,118 L185,150 Q185,158 175,158 L165,158 A20,20 0 0,0 125,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q25,158 25,148 Z" fill="#ffd60a"/>
+    <rect x="82" y="60" width="58" height="38" rx="5" fill="#a8dadc"/>
+    <line x1="111" y1="60" x2="111" y2="98" stroke="#1d3557" stroke-width="2.5"/>
+    <ellipse cx="92" cy="72" rx="20" ry="8" fill="#fff" opacity="0.6"/>
+    <rect x="20" y="118" width="160" height="6" fill="#000"/>
+    <rect x="22" y="124" width="160" height="3" fill="#fff"/>
+    <rect x="22" y="127" width="160" height="3" fill="#000"/>
+    <rect x="22" y="130" width="160" height="3" fill="#fff"/>
+    <circle cx="55" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="11" fill="#adb5bd"/>
+  </g>`,
+
+  car_suv: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="82" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M22,148 L22,108 Q22,90 40,90 L60,55 Q65,42 80,42 L140,42 Q155,42 162,52 L180,90 Q188,93 188,108 L188,150 Q188,158 178,158 L168,158 A20,20 0 0,0 128,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q22,158 22,150 Z" fill="#2a9d8f"/>
+    <rect x="65" y="55" width="55" height="35" rx="4" fill="#a8dadc"/>
+    <rect x="125" y="55" width="35" height="35" rx="4" fill="#a8dadc"/>
+    <line x1="121" y1="55" x2="121" y2="90" stroke="#1d3557" stroke-width="2"/>
+    <ellipse cx="80" cy="65" rx="18" ry="7" fill="#fff" opacity="0.6"/>
+    <rect x="18" y="120" width="172" height="3" fill="#000" opacity="0.3"/>
+    <rect x="40" y="125" width="120" height="6" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="24" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="13" fill="#adb5bd"/>
+    <circle cx="55" cy="158" r="6" fill="#495057"/>
+    <circle cx="145" cy="158" r="24" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="13" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="6" fill="#495057"/>
+  </g>`,
+
+  ball_soccer: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="55" ry="6" fill="#000" opacity="0.2"/>
+    <circle cx="100" cy="100" r="72" fill="#f8f9fa"/>
+    <polygon points="100,55 122,68 113,93 87,93 78,68" fill="#1a1a1a"/>
+    <polygon points="155,90 148,115 122,118 113,93 132,75" fill="#1a1a1a"/>
+    <polygon points="45,90 67,75 87,93 78,118 52,115" fill="#1a1a1a"/>
+    <polygon points="100,135 78,118 87,143 113,143 122,118" fill="#1a1a1a"/>
+    <line x1="100" y1="55" x2="100" y2="42" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="78" y1="68" x2="62" y2="58" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="122" y1="68" x2="138" y2="58" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="78" y1="118" x2="65" y2="135" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="122" y1="118" x2="135" y2="135" stroke="#1a1a1a" stroke-width="2"/>
+    <ellipse cx="78" cy="78" rx="22" ry="14" fill="#fff" opacity="0.4"/>
+    <circle cx="100" cy="100" r="72" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  </g>`,
+
+  ball_basketball: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="55" ry="6" fill="#000" opacity="0.2"/>
+    <circle cx="100" cy="100" r="72" fill="#e76f51"/>
+    <circle cx="100" cy="100" r="72" fill="url(#shine)"/>
+    <line x1="100" y1="28" x2="100" y2="172" stroke="#1a1a1a" stroke-width="3"/>
+    <path d="M28,100 Q100,80 172,100" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M28,100 Q100,120 172,100" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M50,42 Q60,100 50,158" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M150,42 Q140,100 150,158" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+  </g>`,
+
+  ball_tennis: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="55" ry="6" fill="#000" opacity="0.2"/>
+    <circle cx="100" cy="100" r="72" fill="#cdd11a"/>
+    <circle cx="100" cy="100" r="72" fill="url(#shine)"/>
+    <path d="M40,55 Q70,90 40,140" stroke="#fff" stroke-width="4" fill="none"/>
+    <path d="M160,55 Q130,90 160,140" stroke="#fff" stroke-width="4" fill="none"/>
+    <ellipse cx="80" cy="75" rx="20" ry="10" fill="#fff" opacity="0.4"/>
+  </g>`,
+
+  duck: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="60" ry="5" fill="#000" opacity="0.2"/>
+    <ellipse cx="100" cy="135" rx="65" ry="40" fill="#ffd60a"/>
+    <path d="M70,128 Q60,118 75,115 L155,115 Q165,128 155,135 Z" fill="#fbbf24"/>
+    <circle cx="125" cy="80" r="35" fill="#ffd60a"/>
+    <ellipse cx="125" cy="98" rx="35" ry="15" fill="#fbbf24"/>
+    <path d="M150,80 Q175,82 175,90 Q175,98 158,96 Q148,94 148,86 Z" fill="#f97316"/>
+    <path d="M150,86 Q165,86 165,90 L150,92 Z" fill="#ea580c"/>
+    <circle cx="135" cy="72" r="6" fill="#1a1a1a"/>
+    <circle cx="137" cy="70" r="2" fill="#fff"/>
+    <ellipse cx="65" cy="125" rx="12" ry="8" fill="#fbbf24"/>
+    <ellipse cx="105" cy="120" rx="20" ry="6" fill="#fff" opacity="0.5"/>
+  </g>`,
+
+  cat: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <path d="M55,80 L40,40 L75,65 Z" fill="#f4a460"/>
+    <path d="M145,80 L160,40 L125,65 Z" fill="#f4a460"/>
+    <path d="M50,38 L42,52 L58,55 Z" fill="#ff6b9d"/>
+    <path d="M150,38 L158,52 L142,55 Z" fill="#ff6b9d"/>
+    <ellipse cx="100" cy="110" rx="55" ry="50" fill="#f4a460"/>
+    <ellipse cx="100" cy="135" rx="40" ry="20" fill="#fff5e6"/>
+    <ellipse cx="78" cy="100" rx="8" ry="11" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="100" rx="8" ry="11" fill="#1a1a1a"/>
+    <circle cx="80" cy="96" r="3" fill="#fff"/>
+    <circle cx="124" cy="96" r="3" fill="#fff"/>
+    <path d="M95,128 Q100,135 105,128" fill="#ff6b9d"/>
+    <path d="M85,135 Q100,148 115,135" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="78" y1="128" x2="58" y2="125" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="78" y1="132" x2="58" y2="135" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="122" y1="128" x2="142" y2="125" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="122" y1="132" x2="142" y2="135" stroke="#1a1a1a" stroke-width="1.5"/>
+  </g>`,
+
+  dog: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <ellipse cx="50" cy="95" rx="22" ry="35" fill="#8b5a2b"/>
+    <ellipse cx="150" cy="95" rx="22" ry="35" fill="#8b5a2b"/>
+    <ellipse cx="100" cy="115" rx="58" ry="55" fill="#d4a574"/>
+    <path d="M60,80 Q100,55 140,80 L130,100 Q100,90 70,100 Z" fill="#8b5a2b"/>
+    <ellipse cx="100" cy="135" rx="35" ry="22" fill="#fff5e6"/>
+    <ellipse cx="78" cy="105" rx="7" ry="10" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="105" rx="7" ry="10" fill="#1a1a1a"/>
+    <circle cx="80" cy="102" r="2.5" fill="#fff"/>
+    <circle cx="124" cy="102" r="2.5" fill="#fff"/>
+    <ellipse cx="100" cy="135" rx="11" ry="7" fill="#1a1a1a"/>
+    <path d="M88,148 Q100,160 112,148" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M100,142 L100,150" stroke="#1a1a1a" stroke-width="2"/>
+  </g>`,
+
+  blocks: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="65" ry="5" fill="#000" opacity="0.2"/>
+    <rect x="30" y="125" width="60" height="50" rx="4" fill="#e63946"/>
+    <circle cx="45" cy="120" r="6" fill="#e63946"/>
+    <circle cx="60" cy="120" r="6" fill="#e63946"/>
+    <circle cx="75" cy="120" r="6" fill="#e63946"/>
+    <circle cx="45" cy="118" r="4" fill="#fff" opacity="0.4"/>
+    <rect x="105" y="125" width="60" height="50" rx="4" fill="#2a9d8f"/>
+    <circle cx="120" cy="120" r="6" fill="#2a9d8f"/>
+    <circle cx="135" cy="120" r="6" fill="#2a9d8f"/>
+    <circle cx="150" cy="120" r="6" fill="#2a9d8f"/>
+    <rect x="60" y="60" width="60" height="50" rx="4" fill="#ffd60a"/>
+    <circle cx="75" cy="55" r="6" fill="#ffd60a"/>
+    <circle cx="90" cy="55" r="6" fill="#ffd60a"/>
+    <circle cx="105" cy="55" r="6" fill="#ffd60a"/>
+    <text x="90" y="95" text-anchor="middle" font-size="22" font-weight="bold" fill="#1d3557" font-family="sans-serif">A</text>
+    <text x="60" y="160" text-anchor="middle" font-size="22" font-weight="bold" fill="#fff" font-family="sans-serif">B</text>
+    <text x="135" y="160" text-anchor="middle" font-size="22" font-weight="bold" fill="#fff" font-family="sans-serif">C</text>
+  </g>`,
+
+  // ============ 稀有 ============
+  racecar: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="85" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M10,130 L10,118 Q10,108 20,108 L42,108 L60,80 Q65,72 78,72 L130,72 Q142,72 150,82 L162,108 L182,108 Q190,108 190,118 L190,135 Q190,142 180,142 L170,142 A18,18 0 0,0 130,142 L75,142 A18,18 0 0,0 35,142 L20,142 Q10,142 10,135 Z" fill="#e63946"/>
+    <path d="M65,82 Q70,75 80,75 L125,75 Q135,75 140,82 L150,108 H62 Z" fill="#1d3557"/>
+    <path d="M75,80 Q78,75 85,75 L120,75 Q127,75 130,80 L135,100 H72 Z" fill="#a8dadc" opacity="0.85"/>
+    <rect x="25" y="60" width="55" height="14" rx="3" fill="#1d3557"/>
+    <rect x="120" y="60" width="55" height="14" rx="3" fill="#1d3557"/>
+    <text x="103" y="135" text-anchor="middle" fill="#fff" font-size="20" font-weight="bold" font-family="sans-serif">7</text>
+    <circle cx="55" cy="142" r="22" fill="#1a1a1a"/>
+    <circle cx="55" cy="142" r="13" fill="#495057"/>
+    <circle cx="55" cy="142" r="6" fill="#adb5bd"/>
+    <circle cx="150" cy="142" r="22" fill="#1a1a1a"/>
+    <circle cx="150" cy="142" r="13" fill="#495057"/>
+    <circle cx="150" cy="142" r="6" fill="#adb5bd"/>
+    <rect x="6" y="118" width="10" height="14" rx="1" fill="#ffd60a"/>
+  </g>`,
+
+  fire_truck: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="82" ry="6" fill="#000" opacity="0.2"/>
+    <rect x="20" y="60" width="160" height="80" rx="6" fill="#d62828"/>
+    <rect x="20" y="55" width="160" height="10" rx="3" fill="#1d3557"/>
+    <circle cx="60" cy="50" r="6" fill="#3498db"/>
+    <circle cx="100" cy="50" r="6" fill="#e63946"/>
+    <circle cx="140" cy="50" r="6" fill="#3498db"/>
+    <rect x="120" y="70" width="55" height="55" rx="4" fill="#a8324a"/>
+    <rect x="125" y="75" width="45" height="20" rx="2" fill="#a8dadc"/>
+    <rect x="125" y="100" width="45" height="20" rx="2" fill="#a8dadc"/>
+    <rect x="30" y="80" width="80" height="50" rx="3" fill="#a8324a"/>
+    <text x="70" y="115" text-anchor="middle" fill="#fff" font-size="22" font-weight="bold" font-family="sans-serif">FIRE</text>
+    <line x1="20" y1="125" x2="180" y2="125" stroke="#fff" stroke-width="3"/>
+    <circle cx="55" cy="148" r="20" fill="#1a1a1a"/>
+    <circle cx="55" cy="148" r="10" fill="#adb5bd"/>
+    <circle cx="145" cy="148" r="20" fill="#1a1a1a"/>
+    <circle cx="145" cy="148" r="10" fill="#adb5bd"/>
+    <rect x="178" y="80" width="6" height="40" fill="#adb5bd"/>
+    <line x1="184" y1="60" x2="184" y2="120" stroke="#adb5bd" stroke-width="3"/>
+  </g>`,
+
+  police_car: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="80" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M25,140 L25,115 Q25,98 45,98 L65,98 L82,55 Q86,45 100,45 L130,45 Q146,45 155,58 L172,98 L180,103 Q185,108 185,118 L185,150 Q185,158 175,158 L165,158 A20,20 0 0,0 125,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q25,158 25,148 Z" fill="#fff"/>
+    <path d="M25,98 L25,140 L100,140 L100,98 Z" fill="#1d3557"/>
+    <path d="M82,55 L72,98 H170 L160,68 L155,58 Q150,55 145,55 Z" fill="#1d3557" opacity="0.3"/>
+    <rect x="82" y="60" width="58" height="38" rx="5" fill="#a8dadc"/>
+    <rect x="80" y="30" width="40" height="18" rx="3" fill="#1d3557"/>
+    <circle cx="90" cy="39" r="6" fill="#e63946"/>
+    <circle cx="110" cy="39" r="6" fill="#3498db"/>
+    <text x="135" y="135" text-anchor="middle" fill="#1d3557" font-size="14" font-weight="bold" font-family="sans-serif">POLICE</text>
+    <circle cx="55" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="11" fill="#adb5bd"/>
+  </g>`,
+
+  plane: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="65" ry="5" fill="#000" opacity="0.15"/>
+    <path d="M30,110 Q22,100 30,90 L160,85 Q180,90 188,100 Q180,110 160,115 L40,118 Q28,118 30,110 Z" fill="#fff"/>
+    <path d="M30,110 Q22,100 30,90 L160,85 Q180,90 188,100 Q180,110 160,115 L40,118 Q28,118 30,110 Z" fill="none" stroke="#1d3557" stroke-width="2"/>
+    <path d="M50,90 L25,55 L48,55 L75,88 Z" fill="#3498db"/>
+    <path d="M50,118 L25,150 L48,148 L75,118 Z" fill="#3498db"/>
+    <path d="M165,90 L185,80 L180,98 Z" fill="#3498db"/>
+    <circle cx="60" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="80" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="100" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="120" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="140" cy="100" r="4" fill="#a8dadc"/>
+    <path d="M165,95 Q175,100 165,105 L155,103 L155,97 Z" fill="#a8dadc"/>
+    <line x1="40" y1="118" x2="60" y2="135" stroke="#1d3557" stroke-width="2"/>
+    <line x1="60" y1="118" x2="60" y2="135" stroke="#1d3557" stroke-width="2"/>
+    <circle cx="60" cy="138" r="3" fill="#1a1a1a"/>
+    <line x1="120" y1="118" x2="130" y2="135" stroke="#1d3557" stroke-width="2"/>
+    <circle cx="130" cy="138" r="3" fill="#1a1a1a"/>
+  </g>`,
+
+  helicopter: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="60" ry="5" fill="#000" opacity="0.15"/>
+    <line x1="20" y1="50" x2="180" y2="50" stroke="#1d3557" stroke-width="3"/>
+    <circle cx="100" cy="50" r="4" fill="#1d3557"/>
+    <line x1="100" y1="50" x2="100" y2="65" stroke="#1d3557" stroke-width="3"/>
+    <ellipse cx="80" cy="115" rx="60" ry="35" fill="#06d6a0"/>
+    <path d="M30,115 Q40,90 80,90 Q120,90 130,110 L130,140 Q120,150 80,150 Q40,150 30,130 Z" fill="#06d6a0"/>
+    <path d="M50,100 Q60,92 80,92 Q105,92 115,100 L115,120 Q105,128 80,128 Q60,128 50,120 Z" fill="#a8dadc"/>
+    <path d="M130,115 L175,115 L180,118 L180,128 L130,128 Z" fill="#06d6a0"/>
+    <line x1="170" y1="118" x2="180" y2="105" stroke="#1d3557" stroke-width="3"/>
+    <line x1="170" y1="128" x2="180" y2="138" stroke="#1d3557" stroke-width="3"/>
+    <ellipse cx="80" cy="155" rx="50" ry="3" fill="#1d3557"/>
+    <line x1="55" y1="150" x2="55" y2="155" stroke="#1d3557" stroke-width="3"/>
+    <line x1="105" y1="150" x2="105" y2="155" stroke="#1d3557" stroke-width="3"/>
+  </g>`,
+
+  panda: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <circle cx="50" cy="55" r="22" fill="#1a1a1a"/>
+    <circle cx="150" cy="55" r="22" fill="#1a1a1a"/>
+    <circle cx="100" cy="105" r="62" fill="#fff"/>
+    <ellipse cx="72" cy="95" rx="14" ry="18" fill="#1a1a1a"/>
+    <ellipse cx="128" cy="95" rx="14" ry="18" fill="#1a1a1a"/>
+    <circle cx="72" cy="95" r="6" fill="#fff"/>
+    <circle cx="128" cy="95" r="6" fill="#fff"/>
+    <circle cx="74" cy="93" r="3" fill="#1a1a1a"/>
+    <circle cx="130" cy="93" r="3" fill="#1a1a1a"/>
+    <ellipse cx="100" cy="125" rx="9" ry="6" fill="#1a1a1a"/>
+    <path d="M91,135 Q100,148 109,135" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M100,131 L100,138" stroke="#1a1a1a" stroke-width="2"/>
+  </g>`,
+
+  tiger: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <path d="M50,80 L40,40 L72,62 Z" fill="#f4a261"/>
+    <path d="M150,80 L160,40 L128,62 Z" fill="#f4a261"/>
+    <path d="M48,40 L60,55 L52,60 Z" fill="#1a1a1a"/>
+    <path d="M152,40 L140,55 L148,60 Z" fill="#1a1a1a"/>
+    <circle cx="100" cy="110" r="58" fill="#f4a261"/>
+    <path d="M55,75 L62,95 M70,68 L75,90 M85,62 L88,86 M115,62 L112,86 M130,68 L125,90 M145,75 L138,95" stroke="#1a1a1a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="100" cy="135" rx="32" ry="20" fill="#fff5e6"/>
+    <ellipse cx="78" cy="105" rx="6" ry="9" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="105" rx="6" ry="9" fill="#1a1a1a"/>
+    <circle cx="79" cy="103" r="2" fill="#fff"/>
+    <circle cx="123" cy="103" r="2" fill="#fff"/>
+    <path d="M92,128 L100,135 L108,128 Z" fill="#1a1a1a"/>
+    <path d="M85,142 Q100,154 115,142" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="58" y1="130" x2="40" y2="130" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="142" y1="130" x2="160" y2="130" stroke="#1a1a1a" stroke-width="1.5"/>
+  </g>`,
+
+  teddy: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="50" ry="5" fill="#000" opacity="0.2"/>
+    <circle cx="55" cy="65" r="20" fill="#a0826d"/>
+    <circle cx="55" cy="65" r="11" fill="#d4a574"/>
+    <circle cx="145" cy="65" r="20" fill="#a0826d"/>
+    <circle cx="145" cy="65" r="11" fill="#d4a574"/>
+    <circle cx="100" cy="105" r="55" fill="#a0826d"/>
+    <ellipse cx="100" cy="125" rx="32" ry="25" fill="#d4a574"/>
+    <circle cx="78" cy="98" r="6" fill="#1a1a1a"/>
+    <circle cx="122" cy="98" r="6" fill="#1a1a1a"/>
+    <circle cx="80" cy="96" r="2" fill="#fff"/>
+    <circle cx="124" cy="96" r="2" fill="#fff"/>
+    <ellipse cx="100" cy="120" rx="8" ry="6" fill="#1a1a1a"/>
+    <path d="M90,130 Q100,140 110,130" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M125,150 L165,165 M125,155 L160,170" stroke="#e63946" stroke-width="2.5"/>
+    <path d="M138,148 Q145,158 153,150 Q148,165 138,160 Z" fill="#e63946"/>
+  </g>`,
+
+  // ============ 史诗 ============
+  rocket: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="40" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M100,15 Q120,40 120,80 L120,140 L80,140 L80,80 Q80,40 100,15 Z" fill="#f8f9fa"/>
+    <path d="M100,15 Q110,30 115,55 L100,55 Z" fill="#e63946"/>
+    <path d="M80,140 L60,165 L80,165 Z" fill="#e63946"/>
+    <path d="M120,140 L140,165 L120,165 Z" fill="#e63946"/>
+    <path d="M100,140 L100,170" stroke="#e63946" stroke-width="20"/>
+    <circle cx="100" cy="80" r="14" fill="#a8dadc"/>
+    <circle cx="100" cy="80" r="14" fill="none" stroke="#1d3557" stroke-width="3"/>
+    <circle cx="96" cy="76" r="5" fill="#fff" opacity="0.7"/>
+    <rect x="92" y="105" width="16" height="6" rx="1" fill="#1d3557"/>
+    <rect x="92" y="118" width="16" height="6" rx="1" fill="#1d3557"/>
+    <path d="M85,165 Q90,180 95,170 Q100,185 105,170 Q110,180 115,165" fill="#ffd60a"/>
+    <path d="M88,165 Q92,176 96,168 Q100,180 104,168 Q108,176 112,165" fill="#f97316"/>
+    <circle cx="50" cy="50" r="2" fill="#fff"/>
+    <circle cx="160" cy="80" r="2" fill="#fff"/>
+    <circle cx="40" cy="120" r="2.5" fill="#fff"/>
+    <circle cx="170" cy="140" r="2" fill="#fff"/>
+  </g>`,
+
+  robot: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="45" ry="4" fill="#000" opacity="0.25"/>
+    <line x1="100" y1="20" x2="100" y2="40" stroke="#1d3557" stroke-width="3"/>
+    <circle cx="100" cy="18" r="6" fill="#e63946"/>
+    <rect x="60" y="40" width="80" height="60" rx="8" fill="#adb5bd"/>
+    <rect x="60" y="40" width="80" height="60" rx="8" fill="url(#shine)"/>
+    <rect x="68" y="55" width="64" height="32" rx="4" fill="#1d3557"/>
+    <circle cx="82" cy="71" r="6" fill="#06d6a0"/>
+    <circle cx="118" cy="71" r="6" fill="#06d6a0"/>
+    <rect x="80" y="80" width="40" height="3" fill="#06d6a0"/>
+    <rect x="92" y="100" width="16" height="8" fill="#1d3557"/>
+    <rect x="50" y="105" width="100" height="65" rx="6" fill="#6c757d"/>
+    <rect x="50" y="105" width="100" height="65" rx="6" fill="url(#shine)"/>
+    <circle cx="100" cy="125" r="10" fill="#ffd60a"/>
+    <rect x="80" y="145" width="40" height="20" rx="3" fill="#1d3557"/>
+    <circle cx="92" cy="155" r="3" fill="#06d6a0"/>
+    <circle cx="100" cy="155" r="3" fill="#e63946"/>
+    <circle cx="108" cy="155" r="3" fill="#3498db"/>
+    <rect x="20" y="115" width="22" height="40" rx="6" fill="#adb5bd"/>
+    <rect x="158" y="115" width="22" height="40" rx="6" fill="#adb5bd"/>
+    <circle cx="31" cy="160" r="9" fill="#495057"/>
+    <circle cx="169" cy="160" r="9" fill="#495057"/>
+  </g>`,
+
+  trex: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="60" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M155,170 Q175,160 188,135 Q190,125 180,130 Q170,140 160,148 Z" fill="#52b788"/>
+    <ellipse cx="105" cy="115" rx="50" ry="40" fill="#52b788"/>
+    <path d="M58,115 Q40,75 30,55 Q35,50 50,75 Q65,95 75,108 Z" fill="#52b788"/>
+    <ellipse cx="40" cy="68" rx="22" ry="18" fill="#52b788"/>
+    <path d="M22,72 L8,75 Q20,80 32,78 Z" fill="#52b788"/>
+    <path d="M20,78 L24,75 M28,80 L32,78 M36,82 L40,80" stroke="#fff" stroke-width="2"/>
+    <path d="M22,72 L25,68 L28,72 M32,68 L35,64 L38,68" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="42" cy="62" r="4" fill="#1a1a1a"/>
+    <circle cx="43" cy="60" r="1.5" fill="#fff"/>
+    <ellipse cx="105" cy="125" rx="35" ry="20" fill="#74c69d"/>
+    <path d="M70,140 L60,180 L80,180 L88,150 Z" fill="#52b788"/>
+    <path d="M125,140 L130,180 L150,180 L140,150 Z" fill="#40916c"/>
+    <path d="M155,118 Q152,100 145,90 M150,108 Q148,95 143,88 M145,100 Q144,90 140,85" stroke="#52b788" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M58,115 Q56,108 60,103 L65,107" stroke="#40916c" stroke-width="4" fill="#52b788"/>
+  </g>`,
+
+  bronto: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="65" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M30,140 Q35,90 80,85 Q105,88 110,120 Q175,105 180,55 Q185,35 175,32 Q170,40 170,55 Q170,85 130,95 Q105,98 95,80 Q80,70 60,80 Q35,95 25,140 Z" fill="#3a86ff"/>
+    <path d="M40,140 Q40,160 50,170 L65,170 Q65,150 60,140 Z" fill="#3a86ff"/>
+    <path d="M85,140 Q85,160 95,170 L110,170 Q110,150 105,140 Z" fill="#3a86ff"/>
+    <ellipse cx="178" cy="38" rx="10" ry="8" fill="#3a86ff"/>
+    <circle cx="180" cy="35" r="2.5" fill="#1a1a1a"/>
+    <path d="M173,42 L168,45" stroke="#1a1a1a" stroke-width="2"/>
+    <path d="M28,95 Q35,90 60,90 Q90,93 95,75 Q100,65 110,68" stroke="#266dd3" stroke-width="2" fill="none" opacity="0.5"/>
+    <ellipse cx="55" cy="105" rx="3" ry="5" fill="#266dd3"/>
+    <ellipse cx="78" cy="100" rx="3" ry="5" fill="#266dd3"/>
+    <ellipse cx="105" cy="115" rx="3" ry="5" fill="#266dd3"/>
+  </g>`,
+
+  castle: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="75" ry="4" fill="#000" opacity="0.2"/>
+    <rect x="20" y="80" width="40" height="100" fill="#adb5bd"/>
+    <rect x="140" y="80" width="40" height="100" fill="#adb5bd"/>
+    <rect x="60" y="100" width="80" height="80" fill="#adb5bd"/>
+    <path d="M20,80 V72 H28 V80 M32,80 V72 H40 V80 M44,80 V72 H52 V80 M56,80 V72 H60 V80" fill="#adb5bd"/>
+    <path d="M140,80 V72 H148 V80 M152,80 V72 H160 V80 M164,80 V72 H172 V80 M176,80 V72 H180 V80" fill="#adb5bd"/>
+    <path d="M60,100 V92 H68 V100 M72,100 V92 H80 V100 M120,100 V92 H128 V100 M132,100 V92 H140 V100" fill="#adb5bd"/>
+    <path d="M40,72 L30,40 L20,72 Z" fill="#e63946"/>
+    <path d="M160,72 L150,40 L140,72 Z" fill="#e63946"/>
+    <rect x="35" y="120" width="14" height="22" fill="#1d3557"/>
+    <rect x="151" y="120" width="14" height="22" fill="#1d3557"/>
+    <rect x="85" y="135" width="30" height="45" fill="#5a2d0c"/>
+    <path d="M85,135 Q100,118 115,135" fill="#5a2d0c"/>
+    <path d="M85,135 Q100,118 115,135" fill="none" stroke="#1d3557" stroke-width="2"/>
+    <circle cx="92" cy="150" r="2" fill="#ffd60a"/>
+    <line x1="100" y1="135" x2="100" y2="180" stroke="#1d3557" stroke-width="1.5"/>
+    <line x1="20" y1="100" x2="180" y2="100" stroke="#6c757d" stroke-width="1"/>
+    <line x1="20" y1="120" x2="180" y2="120" stroke="#6c757d" stroke-width="1"/>
+    <line x1="20" y1="140" x2="180" y2="140" stroke="#6c757d" stroke-width="1"/>
+    <line x1="20" y1="160" x2="180" y2="160" stroke="#6c757d" stroke-width="1"/>
+    <path d="M30,40 L40,28 L42,32 L36,38 Z" fill="#ffd60a"/>
+    <path d="M150,40 L160,28 L162,32 L156,38 Z" fill="#ffd60a"/>
+  </g>`,
+
+  wizard: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="55" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M55,75 Q90,5 145,75 Q140,82 100,82 Q60,82 55,75 Z" fill="#3a0ca3"/>
+    <path d="M60,76 Q95,15 140,76" fill="none" stroke="#7209b7" stroke-width="2"/>
+    <circle cx="80" cy="35" r="2" fill="#ffd60a"/>
+    <circle cx="110" cy="25" r="2.5" fill="#ffd60a"/>
+    <circle cx="125" cy="50" r="2" fill="#ffd60a"/>
+    <path d="M85,30 L88,33 L91,30 L88,27 Z" fill="#ffd60a"/>
+    <ellipse cx="100" cy="100" rx="35" ry="32" fill="#fcbf49"/>
+    <circle cx="86" cy="98" r="4" fill="#1a1a1a"/>
+    <circle cx="114" cy="98" r="4" fill="#1a1a1a"/>
+    <path d="M75,108 Q80,135 90,138 Q100,140 110,138 Q120,135 125,108 L120,128 L100,135 L80,128 Z" fill="#fff"/>
+    <path d="M75,108 Q80,150 95,155 L100,135 L80,128 Z" fill="#e9ecef"/>
+    <path d="M85,82 Q90,78 95,82 M105,82 Q110,78 115,82" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+    <path d="M85,135 Q100,170 115,135" fill="#3a0ca3"/>
+    <line x1="160" y1="80" x2="180" y2="40" stroke="#5a2d0c" stroke-width="4"/>
+    <path d="M178,38 L182,42 L186,38 L188,32 L184,30 Z" fill="#ffd60a"/>
+    <circle cx="184" cy="36" r="3" fill="#fff"/>
+  </g>`,
+
+  // ============ 传说 ============
+  dragon: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="65" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M30,135 Q15,100 25,75 Q35,50 60,55 Q75,30 105,40 Q140,30 160,55 Q180,75 175,100 Q185,115 178,135 L165,140 Q170,128 165,118 Q160,135 145,140 L145,165 Q140,175 130,170 L130,150 Q105,160 75,150 L75,170 Q70,175 60,170 L60,150 Q40,140 35,130 Q30,135 25,140 Z" fill="#e63946"/>
+    <path d="M30,75 L20,55 L40,68 Z" fill="#c1121f"/>
+    <path d="M170,75 L180,55 L160,68 Z" fill="#c1121f"/>
+    <path d="M50,55 Q55,30 65,30 L65,55 Z" fill="#ffd60a"/>
+    <path d="M150,55 Q145,30 135,30 L135,55 Z" fill="#ffd60a"/>
+    <path d="M75,105 Q60,90 55,75 Q70,80 80,95 Q105,85 120,95 Q130,80 145,75 Q140,90 125,105 Z" fill="#ffd60a" opacity="0.6"/>
+    <ellipse cx="78" cy="78" rx="8" ry="10" fill="#fff"/>
+    <ellipse cx="122" cy="78" rx="8" ry="10" fill="#fff"/>
+    <ellipse cx="78" cy="80" rx="4" ry="7" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="80" rx="4" ry="7" fill="#1a1a1a"/>
+    <path d="M85,100 L92,108 L100,100 L108,108 L115,100" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
+    <path d="M155,135 Q175,140 188,160 Q175,170 165,160" fill="#e63946"/>
+    <path d="M165,160 Q175,170 188,160 L185,150" fill="#c1121f"/>
+    <circle cx="52" cy="105" r="3" fill="#c1121f"/>
+    <circle cx="148" cy="105" r="3" fill="#c1121f"/>
+    <circle cx="65" cy="125" r="3" fill="#c1121f"/>
+    <circle cx="135" cy="125" r="3" fill="#c1121f"/>
+    <path d="M30,80 L18,75 M30,90 L15,90 M30,100 L18,105" stroke="#c1121f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M170,80 L182,75 M170,90 L185,90 M170,100 L182,105" stroke="#c1121f" stroke-width="2" stroke-linecap="round"/>
+  </g>`,
+
+  unicorn: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="55" ry="4" fill="#000" opacity="0.2"/>
+    <ellipse cx="105" cy="135" rx="55" ry="35" fill="#fff"/>
+    <ellipse cx="60" cy="105" rx="22" ry="35" fill="#fff" transform="rotate(-15 60 105)"/>
+    <path d="M50,75 L60,85 L70,75" fill="#fff"/>
+    <path d="M52,72 L48,55 L65,68 Z" fill="#ffafcc"/>
+    <path d="M52,30 L60,75 L48,75 Z" fill="#ffd60a"/>
+    <path d="M52,30 Q56,55 60,75 M48,75 Q54,55 52,30" stroke="#f4a261" stroke-width="1.5" fill="none"/>
+    <path d="M65,40 Q70,60 78,75 Q60,75 55,75 Q40,40 65,40 Z" fill="#ff6b9d"/>
+    <path d="M65,55 Q72,68 78,75 Q60,75 55,75 Q50,55 65,55 Z" fill="#3a86ff"/>
+    <path d="M65,65 Q70,72 78,75 Q60,75 58,75 Q55,65 65,65 Z" fill="#ffd60a"/>
+    <path d="M70,68 Q72,72 78,75 Q60,75 60,75 Q58,68 70,68 Z" fill="#06d6a0"/>
+    <ellipse cx="58" cy="92" rx="3.5" ry="5" fill="#1a1a1a"/>
+    <ellipse cx="59" cy="91" rx="1" ry="2" fill="#fff"/>
+    <ellipse cx="48" cy="100" rx="3" ry="2" fill="#ffafcc"/>
+    <path d="M75,160 L60,180 L75,180 Z" fill="#fff"/>
+    <path d="M95,160 L85,180 L100,180 Z" fill="#fff"/>
+    <path d="M115,160 L120,180 L135,180 Z" fill="#fff"/>
+    <path d="M135,160 L142,180 L155,180 Z" fill="#fff"/>
+    <path d="M150,135 Q175,125 175,160 Q172,170 165,165 L165,150 Q160,145 155,150 Q150,148 150,140 Z" fill="#fff"/>
+    <path d="M155,140 Q175,130 175,160 L172,160 Q165,148 160,150 Q155,148 155,140 Z" fill="#ff6b9d"/>
+    <path d="M158,145 Q173,135 175,158 L170,158 Q165,150 162,152 Q158,150 158,145 Z" fill="#3a86ff"/>
+    <path d="M162,150 Q172,142 173,156 L168,156 Q165,152 164,153 Q162,152 162,150 Z" fill="#ffd60a"/>
+  </g>`,
+
+  crown: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="65" ry="5" fill="#000" opacity="0.25"/>
+    <path d="M25,160 L25,90 L55,55 L55,100 L80,40 L80,100 L100,30 L100,100 L120,40 L120,100 L145,55 L145,100 L175,90 L175,160 Z" fill="#ffd60a"/>
+    <path d="M25,160 L25,90 L55,55 L55,100 L80,40 L80,100 L100,30 L100,100 L120,40 L120,100 L145,55 L145,100 L175,90 L175,160 Z" fill="url(#shine)"/>
+    <path d="M25,160 L25,90 L55,55 L55,100 L80,40 L80,100 L100,30 L100,100 L120,40 L120,100 L145,55 L145,100 L175,90 L175,160 Z" fill="none" stroke="#b8860b" stroke-width="3"/>
+    <rect x="25" y="120" width="150" height="20" fill="#f4d35e"/>
+    <rect x="25" y="120" width="150" height="20" fill="none" stroke="#b8860b" stroke-width="2"/>
+    <circle cx="55" cy="55" r="8" fill="#06d6a0"/>
+    <circle cx="55" cy="55" r="8" fill="url(#shine)"/>
+    <circle cx="55" cy="55" r="8" fill="none" stroke="#1d3557" stroke-width="1.5"/>
+    <circle cx="100" cy="30" r="10" fill="#e63946"/>
+    <circle cx="100" cy="30" r="10" fill="url(#shine)"/>
+    <circle cx="100" cy="30" r="10" fill="none" stroke="#1d3557" stroke-width="1.5"/>
+    <circle cx="145" cy="55" r="8" fill="#3a86ff"/>
+    <circle cx="145" cy="55" r="8" fill="url(#shine)"/>
+    <circle cx="145" cy="55" r="8" fill="none" stroke="#1d3557" stroke-width="1.5"/>
+    <circle cx="50" cy="130" r="6" fill="#e63946"/>
+    <circle cx="80" cy="130" r="6" fill="#3a86ff"/>
+    <circle cx="100" cy="130" r="6" fill="#06d6a0"/>
+    <circle cx="120" cy="130" r="6" fill="#3a86ff"/>
+    <circle cx="150" cy="130" r="6" fill="#e63946"/>
+    <path d="M30,150 L30,158 M40,150 L40,158 M50,150 L50,158 M60,150 L60,158 M70,150 L70,158 M80,150 L80,158 M90,150 L90,158 M100,150 L100,158 M110,150 L110,158 M120,150 L120,158 M130,150 L130,158 M140,150 L140,158 M150,150 L150,158 M160,150 L160,158 M170,150 L170,158" stroke="#b8860b" stroke-width="1" opacity="0.5"/>
+  </g>`,
+
+  gem: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="50" ry="4" fill="#000" opacity="0.3"/>
+    <path d="M40,70 L80,30 L120,30 L160,70 L100,170 Z" fill="#3a86ff"/>
+    <path d="M40,70 L80,30 L100,70 Z" fill="#a8dadc"/>
+    <path d="M120,30 L160,70 L100,70 Z" fill="#1d3557"/>
+    <path d="M80,30 L120,30 L100,70 Z" fill="#7ab8e0"/>
+    <path d="M40,70 L100,70 L100,170 Z" fill="#266dd3"/>
+    <path d="M100,70 L160,70 L100,170 Z" fill="#1d3557"/>
+    <path d="M40,70 L100,70 L100,170 Z" fill="url(#shine)"/>
+    <path d="M55,75 L75,55 L80,80 Z" fill="#fff" opacity="0.6"/>
+    <path d="M105,80 L115,75 L108,90 Z" fill="#fff" opacity="0.4"/>
+    <path d="M70,140 L90,135 L75,150 Z" fill="#fff" opacity="0.3"/>
+    <circle cx="50" cy="50" r="2" fill="#fff"/>
+    <circle cx="160" cy="100" r="2.5" fill="#fff"/>
+    <circle cx="40" cy="120" r="2" fill="#fff"/>
+    <path d="M48,48 L52,48 M50,46 L50,50" stroke="#fff" stroke-width="1"/>
+    <path d="M158,98 L162,98 M160,96 L160,100" stroke="#fff" stroke-width="1"/>
+  </g>`,
+};
+
+// ============================================================
+// 包裹 SVG
+// ============================================================
+const PKG_SVGS = {
+  small: `<g filter="url(#ds)">
+    <rect x="20" y="50" width="160" height="120" rx="6" fill="#d4a373"/>
+    <rect x="20" y="50" width="160" height="120" rx="6" fill="url(#shine)"/>
+    <rect x="20" y="100" width="160" height="14" fill="#f4d35e"/>
+    <rect x="115" y="65" width="50" height="35" fill="#fff" stroke="#999" stroke-width="1"/>
+    <line x1="120" y1="73" x2="160" y2="73" stroke="#000" stroke-width="1.5"/>
+    <line x1="120" y1="80" x2="155" y2="80" stroke="#000" stroke-width="1"/>
+    <rect x="120" y="86" width="40" height="8" fill="repeating-linear-gradient(90deg,#000 0 1px, transparent 1px 2px)"/>
+  </g>`,
+  medium: `<g filter="url(#ds)">
+    <rect x="15" y="50" width="170" height="125" rx="6" fill="#ffafcc"/>
+    <rect x="15" y="50" width="170" height="125" rx="6" fill="url(#shine)"/>
+    <rect x="15" y="105" width="170" height="14" fill="#ffd60a"/>
+    <rect x="93" y="50" width="14" height="125" fill="#ffd60a"/>
+    <path d="M75,40 Q100,15 125,40 Q115,55 100,50 Q85,55 75,40 Z" fill="#e63946"/>
+    <ellipse cx="100" cy="42" rx="6" ry="8" fill="#c1121f"/>
+  </g>`,
+  big: `<g filter="url(#ds)">
+    <rect x="15" y="55" width="170" height="120" rx="8" fill="#9b5de5"/>
+    <rect x="15" y="55" width="170" height="120" rx="8" fill="url(#shine)"/>
+    <rect x="15" y="108" width="170" height="14" fill="#ffd60a"/>
+    <rect x="93" y="55" width="14" height="120" fill="#ffd60a"/>
+    <path d="M70,42 Q100,5 130,42 Q120,60 100,52 Q80,60 70,42 Z" fill="#ff006e"/>
+    <ellipse cx="100" cy="46" rx="8" ry="10" fill="#c1121f"/>
+    <circle cx="40" cy="80" r="4" fill="#ffd60a"/>
+    <circle cx="160" cy="80" r="4" fill="#ffd60a"/>
+    <circle cx="40" cy="150" r="4" fill="#ffd60a"/>
+    <circle cx="160" cy="150" r="4" fill="#ffd60a"/>
+    <path d="M30,120 L36,124 L42,120 L36,116 Z" fill="#fff"/>
+    <path d="M158,140 L164,144 L170,140 L164,136 Z" fill="#fff"/>
+  </g>`,
+  truck: `<g filter="url(#ds)">
+    <rect x="20" y="40" width="100" height="70" rx="4" fill="#fff"/>
+    <rect x="20" y="40" width="100" height="70" rx="4" fill="none" stroke="#1d3557" stroke-width="2"/>
+    <text x="70" y="80" text-anchor="middle" fill="#e63946" font-size="22" font-weight="bold" font-family="sans-serif">EXPRESS</text>
+    <rect x="120" y="55" width="50" height="55" rx="4" fill="#3498db"/>
+    <rect x="125" y="62" width="40" height="20" rx="2" fill="#a8dadc"/>
+    <rect x="130" y="65" width="32" height="14" fill="#fff" opacity="0.4"/>
+    <rect x="20" y="105" width="160" height="8" fill="#1d3557"/>
+    <circle cx="55" cy="120" r="18" fill="#1a1a1a"/>
+    <circle cx="55" cy="120" r="9" fill="#adb5bd"/>
+    <circle cx="55" cy="120" r="4" fill="#495057"/>
+    <circle cx="145" cy="120" r="18" fill="#1a1a1a"/>
+    <circle cx="145" cy="120" r="9" fill="#adb5bd"/>
+    <circle cx="145" cy="120" r="4" fill="#495057"/>
+    <circle cx="170" cy="80" r="3" fill="#ffd60a"/>
+  </g>`,
+};
+
+// ============================================================
+// 玩具数据
+// ============================================================
+const TOYS = [
+  // 普通 (10)
+  { id: 'car_red', name: '红色小汽车', rarity: 'common', svg: TOY_SVGS.car_red },
+  { id: 'car_taxi', name: '出租车', rarity: 'common', svg: TOY_SVGS.car_taxi },
+  { id: 'car_suv', name: '越野车', rarity: 'common', svg: TOY_SVGS.car_suv },
+  { id: 'ball_soccer', name: '足球', rarity: 'common', svg: TOY_SVGS.ball_soccer },
+  { id: 'ball_basketball', name: '篮球', rarity: 'common', svg: TOY_SVGS.ball_basketball },
+  { id: 'ball_tennis', name: '网球', rarity: 'common', svg: TOY_SVGS.ball_tennis },
+  { id: 'duck', name: '小黄鸭', rarity: 'common', svg: TOY_SVGS.duck },
+  { id: 'cat', name: '橘猫咪', rarity: 'common', svg: TOY_SVGS.cat },
+  { id: 'dog', name: '小棕狗', rarity: 'common', svg: TOY_SVGS.dog },
+  { id: 'blocks', name: '字母积木', rarity: 'common', svg: TOY_SVGS.blocks },
+
+  // 稀有 (7)
+  { id: 'racecar', name: 'F1赛车', rarity: 'rare', svg: TOY_SVGS.racecar },
+  { id: 'fire_truck', name: '消防车', rarity: 'rare', svg: TOY_SVGS.fire_truck },
+  { id: 'police_car', name: '警车', rarity: 'rare', svg: TOY_SVGS.police_car },
+  { id: 'plane', name: '客机', rarity: 'rare', svg: TOY_SVGS.plane },
+  { id: 'helicopter', name: '直升机', rarity: 'rare', svg: TOY_SVGS.helicopter },
+  { id: 'panda', name: '熊猫宝宝', rarity: 'rare', svg: TOY_SVGS.panda },
+  { id: 'tiger', name: '小老虎', rarity: 'rare', svg: TOY_SVGS.tiger },
+  { id: 'teddy', name: '泰迪熊', rarity: 'rare', svg: TOY_SVGS.teddy },
+
+  // 史诗 (5)
+  { id: 'rocket', name: '太空火箭', rarity: 'epic', svg: TOY_SVGS.rocket },
+  { id: 'robot', name: '机器人战士', rarity: 'epic', svg: TOY_SVGS.robot },
+  { id: 'trex', name: '霸王龙', rarity: 'epic', svg: TOY_SVGS.trex },
+  { id: 'bronto', name: '蓝鲸龙', rarity: 'epic', svg: TOY_SVGS.bronto },
+  { id: 'castle', name: '巨人城堡', rarity: 'epic', svg: TOY_SVGS.castle },
+  { id: 'wizard', name: '小魔法师', rarity: 'epic', svg: TOY_SVGS.wizard },
+
+  // 传说 (4)
+  { id: 'dragon', name: '神龙', rarity: 'legendary', svg: TOY_SVGS.dragon },
+  { id: 'unicorn', name: '彩虹独角兽', rarity: 'legendary', svg: TOY_SVGS.unicorn },
+  { id: 'crown', name: '黄金王冠', rarity: 'legendary', svg: TOY_SVGS.crown },
+  { id: 'gem', name: '蓝宝石', rarity: 'legendary', svg: TOY_SVGS.gem },
+];
+
+const RARITY_INFO = {
+  common:    { name: '普通', class: 'rarity-common',    coins: 5 },
+  rare:      { name: '稀有', class: 'rarity-rare',      coins: 15 },
+  epic:      { name: '史诗', class: 'rarity-epic',      coins: 40 },
+  legendary: { name: '传说', class: 'rarity-legendary', coins: 100 },
+};
+
+const BOXES = [
+  { id: 'small',   name: '小快递',  cost: 0,  pkg: PKG_SVGS.small,  bonus: { common: 65, rare: 25, epic: 9,  legendary: 1 } },
+  { id: 'medium',  name: '惊喜盒',  cost: 30, pkg: PKG_SVGS.medium, bonus: { common: 40, rare: 35, epic: 20, legendary: 5 } },
+  { id: 'big',     name: '豪华箱',  cost: 80, pkg: PKG_SVGS.big,    bonus: { common: 20, rare: 35, epic: 30, legendary: 15 } },
+];
+
+function svgWrap(content) {
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}${content}</svg>`;
+}
+
+// ============================================================
+// 状态 + 持久化
+// ============================================================
+const STORAGE_KEY = 'zucker-game-save-v2';
+let state = { coins: 20, collection: {} };
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const obj = JSON.parse(saved);
+      state.coins = obj.coins ?? 20;
+      state.collection = obj.collection ?? {};
+    }
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// ============================================================
+// 音效
+// ============================================================
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function playTone(freq, duration, type='sine', volume=0.2) {
+  const ctx = getCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + duration);
+}
+const SFX = {
+  doorbell: () => { playTone(880, 0.15, 'sine'); setTimeout(()=>playTone(660, 0.3, 'sine'), 150); },
+  cut: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(3000, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.4);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.4);
+  },
+  pop: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800 + Math.random()*200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.1);
+  },
+  reveal: (rarity) => {
+    if (rarity === 'legendary') {
+      [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playTone(f, 0.3, 'triangle', 0.25), i*120));
+    } else if (rarity === 'epic') {
+      [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.2, 'triangle', 0.22), i*100));
+    } else if (rarity === 'rare') {
+      [523, 659, 784].forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'triangle', 0.2), i*90));
+    } else {
+      playTone(523, 0.15, 'triangle', 0.2);
+      setTimeout(() => playTone(784, 0.2, 'triangle', 0.2), 100);
+    }
+  },
+  coin: () => {
+    playTone(987, 0.08, 'square', 0.12);
+    setTimeout(() => playTone(1318, 0.12, 'square', 0.12), 60);
+  },
+  whoosh: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(100, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.3);
+  },
+  truck: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, ctx.currentTime);
+    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.5);
+  },
+};
+
+// ============================================================
+// DOM
+// ============================================================
+const $ = id => document.getElementById(id);
+const sceneDoor = $('sceneDoor');
+const sceneUnbox = $('sceneUnbox');
+const sceneReveal = $('sceneReveal');
+
+function showScene(scene) {
+  [sceneDoor, sceneUnbox, sceneReveal].forEach(s => s.classList.add('hidden'));
+  scene.classList.remove('hidden');
+}
+
+function updateTopbar() {
+  $('coinCount').textContent = state.coins;
+  $('collectionCount').textContent = Object.keys(state.collection).length;
+  $('collectionTotal').textContent = TOYS.length;
+}
+
+// ============================================================
+// 拆箱流程
+// ============================================================
+let currentBox = null;
+let unboxStep = 0;
+
+function startDelivery() {
+  showScene(sceneDoor);
+  const truck = $('truck');
+  truck.style.display = 'block';
+  truck.classList.remove('truck-bounce', 'driving', 'leaving');
+  truck.innerHTML = svgWrap(PKG_SVGS.truck);
+  $('packageDoor').style.display = 'none';
+  $('doorHint').style.display = 'none';
+  $('doorTitle').textContent = '叮咚！快递来啦 🚚';
+  $('shopRow').style.display = 'none';
+
+  void truck.offsetWidth;
+  truck.classList.add('driving');
+  SFX.truck();
+
+  setTimeout(() => {
+    SFX.doorbell();
+    truck.classList.add('truck-bounce');
+  }, 1900);
+
+  setTimeout(() => {
+    truck.classList.remove('truck-bounce', 'driving');
+    truck.classList.add('leaving');
+    SFX.truck();
+
+    setTimeout(() => {
+      truck.style.display = 'none';
+      $('packageDoor').innerHTML = svgWrap(currentBox.pkg);
+      $('packageDoor').style.display = 'block';
+      $('doorHint').style.display = 'block';
+      $('doorTitle').textContent = '快递到啦！🎉';
+    }, 700);
+  }, 2500);
+}
+
+function showShop() {
+  showScene(sceneDoor);
+  $('truck').style.display = 'none';
+  $('packageDoor').style.display = 'none';
+  $('doorHint').style.display = 'none';
+  $('doorTitle').textContent = '选一个快递吧 📦';
+
+  const row = $('shopRow');
+  row.innerHTML = '';
+  row.style.display = 'flex';
+
+  BOXES.forEach(box => {
+    const card = document.createElement('div');
+    const canAfford = state.coins >= box.cost;
+    card.className = 'shop-card' + (canAfford ? '' : ' locked');
+    card.innerHTML = `
+      <div class="pkg-icon">${svgWrap(box.pkg)}</div>
+      <div class="label">${box.name}</div>
+      <div class="cost">${box.cost === 0 ? '免费' : box.cost + ' ⭐'}</div>
+    `;
+    if (canAfford) {
+      card.addEventListener('click', () => {
+        getCtx();
+        if (state.coins >= box.cost) {
+          state.coins -= box.cost;
+          updateTopbar(); saveState();
+          currentBox = box;
+          startDelivery();
+        }
+      });
+    }
+    row.appendChild(card);
+  });
+}
+
+$('packageDoor').addEventListener('click', () => {
+  SFX.whoosh();
+  showScene(sceneUnbox);
+  setupUnboxing();
+});
+
+function setupUnboxing() {
+  unboxStep = 0;
+  const box = $('bigBox');
+  box.classList.remove('box-open');
+  $('tape').classList.remove('cut');
+
+  const oldWrap = box.querySelector('.bubble-wrap');
+  if (oldWrap) oldWrap.remove();
+
+  $('cutter').classList.remove('cutting');
+  $('cutter').style.display = 'block';
+  $('unboxTitle').textContent = '拆开它！';
+  $('unboxHint').textContent = '👆 划开胶带';
+  box.onclick = onCutTape;
+}
+
+function onCutTape() {
+  if (unboxStep !== 0) return;
+  unboxStep = 1;
+  SFX.cut();
+  $('cutter').classList.add('cutting');
+  $('tape').classList.add('cut');
+
+  setTimeout(() => {
+    $('cutter').style.display = 'none';
+    $('unboxHint').textContent = '👆 打开盒子';
+    $('bigBox').onclick = onOpenFlaps;
+  }, 600);
+}
+
+function onOpenFlaps() {
+  if (unboxStep !== 1) return;
+  unboxStep = 2;
+  SFX.whoosh();
+  $('bigBox').classList.add('box-open');
+  $('bigBox').onclick = null;
+
+  setTimeout(() => {
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+    for (let i = 0; i < 49; i++) {
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      b.addEventListener('click', onPopBubble);
+      b.addEventListener('mouseover', e => { if (e.buttons === 1) onPopBubble.call(b); });
+      wrap.appendChild(b);
+    }
+    wrap.addEventListener('touchmove', handleTouchPop, { passive: true });
+    $('bigBox').appendChild(wrap);
+    $('unboxHint').textContent = '👆 戳破气泡膜！';
+  }, 600);
+}
+
+function handleTouchPop(e) {
+  for (const t of e.touches) {
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    if (el && el.classList && el.classList.contains('bubble') && !el.classList.contains('popped')) {
+      onPopBubble.call(el);
+    }
+  }
+}
+
+function onPopBubble() {
+  if (this.classList.contains('popped')) return;
+  this.classList.add('popped');
+  SFX.pop();
+  const total = $('bigBox').querySelectorAll('.bubble').length;
+  const popped = $('bigBox').querySelectorAll('.bubble.popped').length;
+  if (popped >= Math.ceil(total * 0.55)) {
+    setTimeout(reveal, 400);
+  }
+}
+
+// ============================================================
+// 抽奖 + 揭晓
+// ============================================================
+function rollToy() {
+  const weights = currentBox.bonus;
+  const total = Object.values(weights).reduce((a,b) => a+b, 0);
+  let roll = Math.random() * total;
+  let chosenRarity = 'common';
+  for (const [rarity, w] of Object.entries(weights)) {
+    if (roll < w) { chosenRarity = rarity; break; }
+    roll -= w;
+  }
+  const candidates = TOYS.filter(t => t.rarity === chosenRarity);
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function reveal() {
+  const toy = rollToy();
+  const info = RARITY_INFO[toy.rarity];
+
+  state.collection[toy.id] = (state.collection[toy.id] || 0) + 1;
+  state.coins += info.coins;
+  saveState();
+  updateTopbar();
+
+  showScene(sceneReveal);
+  const reveal = $('toyReveal');
+  reveal.innerHTML = svgWrap(toy.svg);
+  reveal.className = 'toy-reveal' + (toy.rarity === 'legendary' ? ' legendary' : '');
+  $('toyName').textContent = toy.name;
+  const badge = $('rarityBadge');
+  badge.textContent = info.name + (toy.rarity === 'legendary' ? ' ✨' : '');
+  badge.className = 'rarity-badge ' + info.class;
+  $('rewardCoins').textContent = '+' + info.coins + ' ⭐';
+
+  const glow = $('legendaryGlow');
+  if (toy.rarity === 'legendary' || toy.rarity === 'epic') {
+    glow.className = 'legendary-glow';
+    glow.style.display = 'block';
+  } else {
+    glow.style.display = 'none';
+  }
+
+  SFX.reveal(toy.rarity);
+  setTimeout(() => SFX.coin(), 500);
+
+  spawnConfetti(toy.rarity === 'legendary' ? 80 : toy.rarity === 'epic' ? 50 : toy.rarity === 'rare' ? 30 : 15);
+
+  if (state.collection[toy.id] === 1) {
+    setTimeout(() => {
+      const ft = document.createElement('div');
+      ft.className = 'float-text';
+      ft.textContent = '✨ 新收藏！';
+      ft.style.left = '50%';
+      ft.style.top = '60%';
+      ft.style.transform = 'translateX(-50%)';
+      sceneReveal.appendChild(ft);
+      setTimeout(() => ft.remove(), 1500);
+    }, 800);
+  }
+}
+
+function spawnConfetti(count) {
+  const colors = ['#ff6b9d', '#4ecdc4', '#ffd700', '#9b59b6', '#3498db', '#2ecc71', '#e74c3c'];
+  for (let i = 0; i < count; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.top = -20 + 'px';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = Math.random() * 0.5 + 's';
+    c.style.animationDuration = (1.5 + Math.random()) + 's';
+    if (Math.random() < 0.3) c.style.borderRadius = '50%';
+    sceneReveal.appendChild(c);
+    setTimeout(() => c.remove(), 2500);
+  }
+}
+
+$('continueBtn').addEventListener('click', () => {
+  showShop();
+});
+
+// ============================================================
+// 收藏图鉴
+// ============================================================
+$('openCollection').addEventListener('click', () => {
+  renderCollection();
+  $('collectionModal').classList.remove('hidden');
+});
+$('closeCollection').addEventListener('click', () => {
+  $('collectionModal').classList.add('hidden');
+});
+$('collectionModal').addEventListener('click', e => {
+  if (e.target === $('collectionModal')) $('collectionModal').classList.add('hidden');
+});
+
+function renderCollection() {
+  const grid = $('collectionGrid');
+  grid.innerHTML = '';
+  const order = { legendary: 0, epic: 1, rare: 2, common: 3 };
+  const sorted = [...TOYS].sort((a,b) => order[a.rarity] - order[b.rarity]);
+  for (const toy of sorted) {
+    const cell = document.createElement('div');
+    const owned = state.collection[toy.id] || 0;
+    cell.className = 'collection-cell ' + (owned > 0 ? 'unlocked ' + toy.rarity : 'locked');
+    if (owned > 0) {
+      cell.innerHTML = svgWrap(toy.svg);
+      cell.title = toy.name;
+      if (owned > 1) {
+        const badge = document.createElement('div');
+        badge.className = 'count-badge';
+        badge.textContent = '×' + owned;
+        cell.appendChild(badge);
+      }
+    }
+    grid.appendChild(cell);
+  }
+  const collected = Object.keys(state.collection).length;
+  $('progressText').textContent = `已收集 ${collected}/${TOYS.length} 件玩具`;
+}
+
+// ============================================================
+// 启动
+// ============================================================
+loadState();
+updateTopbar();
+showShop();
+
+document.addEventListener('dblclick', e => e.preventDefault());
+document.addEventListener('gesturestart', e => e.preventDefault());
+</script>
+</body>
+</html>
