@@ -16,29 +16,43 @@
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body {
-    margin: 0; padding: 0; height: 100%;
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
     font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     overflow: hidden;
     background: linear-gradient(180deg, #87ceeb 0%, #ffd6e0 60%, #ffe8a3 100%);
     touch-action: manipulation;
+    overscroll-behavior: none;
   }
-  #game { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;          /* fallback */
+    height: 100dvh;         /* 跟随手机地址栏自适应 */
+    overflow: hidden;
+    /* iOS 刘海/底部小白条留白 */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+  }
 
   /* 顶部状态栏 */
   .topbar {
-    position: absolute; top: 0; left: 0; right: 0;
+    position: absolute; top: env(safe-area-inset-top, 0); left: 0; right: 0;
     display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 16px; z-index: 10; pointer-events: none;
+    padding: clamp(8px, 1.6vmin, 14px) clamp(10px, 2.4vmin, 20px);
+    z-index: 10; pointer-events: none;
   }
   .coin-display, .collection-btn {
     background: rgba(255,255,255,0.9);
     border-radius: 999px;
-    padding: 8px 16px;
-    font-size: 22px; font-weight: bold;
+    padding: clamp(6px, 1.2vmin, 10px) clamp(12px, 2.5vmin, 20px);
+    font-size: clamp(14px, 3vmin, 22px); font-weight: bold;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     pointer-events: auto;
     border: 3px solid #fff;
     cursor: pointer;
+    white-space: nowrap;
   }
   .collection-btn:active { transform: scale(0.95); }
 
@@ -79,7 +93,7 @@
   }
   .house-window {
     position: absolute;
-    width: 80px; height: 80px;
+    width: clamp(54px, 11vmin, 110px); height: clamp(54px, 11vmin, 110px);
     background: linear-gradient(135deg, #a8dadc 0%, #6cb4d9 100%);
     border: 6px solid #c47b3a;
     border-radius: 4px;
@@ -97,7 +111,7 @@
   .window-right { right: 12%; top: 30px; }
   .door {
     position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
-    width: 100px; height: 160px;
+    width: clamp(72px, 14vmin, 130px); height: clamp(110px, 22vmin, 200px);
     background: linear-gradient(180deg, #8b4513 0%, #6b3410 100%);
     border-radius: 8px 8px 0 0;
     border: 4px solid #5a2d0c; border-bottom: none;
@@ -117,7 +131,8 @@
   .delivery-truck {
     position: absolute;
     left: -300px; bottom: 28%;
-    width: 240px; height: 140px;
+    width: clamp(180px, 40vmin, 320px); height: auto;
+    aspect-ratio: 240 / 140;
     z-index: 2;
   }
   .delivery-truck.driving { animation: drive-in 2s ease-out forwards; }
@@ -139,7 +154,7 @@
   .package-on-doorstep {
     position: absolute; left: 50%; bottom: 28%;
     transform: translateX(-50%);
-    width: 130px; height: 130px;
+    width: clamp(100px, 22vmin, 180px); height: clamp(100px, 22vmin, 180px);
     animation: drop-in 0.6s ease-out;
     cursor: pointer;
     filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3));
@@ -175,7 +190,7 @@
   }
   .package-big {
     position: relative;
-    width: 320px; height: 320px;
+    width: clamp(240px, 60vmin, 460px); height: clamp(240px, 60vmin, 460px);
     margin-top: -10%;
     perspective: 600px;
   }
@@ -415,7 +430,7 @@
   }
   @keyframes rays-spin { to { transform: rotate(360deg); } }
   .toy-reveal {
-    width: 260px; height: 260px;
+    width: clamp(200px, 50vmin, 380px); height: clamp(200px, 50vmin, 380px);
     animation: toy-pop 1.2s cubic-bezier(.5,1.8,.4,1) forwards;
     filter: drop-shadow(0 12px 20px rgba(0,0,0,0.3));
     z-index: 5;
@@ -434,18 +449,18 @@
     50% { filter: drop-shadow(0 0 60px gold) drop-shadow(0 0 80px #ffeb3b) drop-shadow(0 12px 20px rgba(0,0,0,0.3)); }
   }
   .toy-name {
-    margin-top: 30px;
-    font-size: 36px; font-weight: bold;
+    margin-top: clamp(16px, 3vmin, 32px);
+    font-size: clamp(22px, 5vmin, 42px); font-weight: bold;
     color: #fff;
     text-shadow: 3px 3px 0 #ff6b9d, 6px 6px 0 rgba(0,0,0,0.2);
     z-index: 5;
     animation: name-bounce 0.6s ease-out 0.8s backwards;
   }
   .rarity-badge {
-    margin-top: 12px;
-    padding: 8px 24px;
+    margin-top: clamp(8px, 1.5vmin, 14px);
+    padding: clamp(6px, 1.2vmin, 10px) clamp(18px, 4vmin, 30px);
     border-radius: 999px;
-    font-size: 22px; font-weight: bold;
+    font-size: clamp(15px, 3vmin, 24px); font-weight: bold;
     color: #fff;
     z-index: 5;
     animation: name-bounce 0.6s ease-out 1.0s backwards;
@@ -462,9 +477,9 @@
   @keyframes gold-shimmer { to { background-position: 200% 0; } }
 
   .big-btn {
-    margin-top: 30px;
-    padding: 18px 48px;
-    font-size: 28px; font-weight: bold;
+    margin-top: clamp(18px, 3vmin, 36px);
+    padding: clamp(12px, 2.5vmin, 22px) clamp(28px, 6.5vmin, 56px);
+    font-size: clamp(20px, 4.5vmin, 32px); font-weight: bold;
     color: #fff;
     background: linear-gradient(180deg, #ff6b9d 0%, #ff4081 100%);
     border: 4px solid #fff;
@@ -508,7 +523,7 @@
     margin-bottom: 12px;
   }
   .collection-title {
-    font-size: 32px; font-weight: bold; color: #ff3366;
+    font-size: clamp(20px, 4.5vmin, 36px); font-weight: bold; color: #ff3366;
     text-shadow: 2px 2px 0 #ffd6e0;
   }
   .close-btn {
@@ -579,34 +594,36 @@
   }
 
   .shop-row {
-    display: flex; gap: 16px; margin-top: 24px;
+    display: flex; gap: clamp(8px, 2vmin, 18px); margin-top: 24px;
     flex-wrap: wrap; justify-content: center;
+    padding: 0 8px;
   }
   .shop-card {
     background: rgba(255,255,255,0.95);
     border: 4px solid #ff6b9d;
     border-radius: 20px;
-    padding: 14px 12px;
+    padding: clamp(8px, 1.6vmin, 16px) clamp(8px, 1.4vmin, 14px);
     text-align: center;
     cursor: pointer;
     transition: transform 0.15s;
-    width: 130px;
+    width: clamp(96px, 22vmin, 150px);
     box-shadow: 0 6px 14px rgba(0,0,0,0.15);
   }
   .shop-card:active { transform: scale(0.95); }
   .shop-card.locked { opacity: 0.6; cursor: not-allowed; border-color: #aaa; }
-  .shop-card .pkg-icon { width: 80px; height: 80px; margin: 0 auto; }
+  .shop-card .pkg-icon { width: clamp(56px, 12vmin, 96px); height: clamp(56px, 12vmin, 96px); margin: 0 auto; }
   .shop-card .pkg-icon svg { width: 100%; height: 100%; }
-  .shop-card .label { font-size: 18px; font-weight: bold; margin-top: 6px; color: #333; }
-  .shop-card .cost { font-size: 18px; color: #d35400; font-weight: bold; margin-top: 4px; }
+  .shop-card .label { font-size: clamp(13px, 2.5vmin, 20px); font-weight: bold; margin-top: 6px; color: #333; }
+  .shop-card .cost { font-size: clamp(13px, 2.5vmin, 20px); color: #d35400; font-weight: bold; margin-top: 4px; }
 
   .scene-title {
-    position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
-    font-size: 32px; font-weight: bold;
+    position: absolute; top: clamp(54px, 10vmin, 100px); left: 50%; transform: translateX(-50%);
+    font-size: clamp(20px, 4.5vmin, 36px); font-weight: bold;
     color: #fff;
     text-shadow: 3px 3px 0 #ff6b9d, 4px 4px 0 rgba(0,0,0,0.2);
     z-index: 5;
     text-align: center;
+    white-space: nowrap;
   }
 
   .float-text {
@@ -627,13 +644,14 @@
   .tap-hint {
     position: absolute; bottom: 12%;
     left: 50%; transform: translateX(-50%);
-    font-size: 24px; font-weight: bold;
+    font-size: clamp(16px, 3.6vmin, 26px); font-weight: bold;
     color: #fff;
     text-shadow: 2px 2px 0 #ff6b9d;
     animation: tap-hint-pulse 1s ease-in-out infinite;
     pointer-events: none;
     text-align: center;
     z-index: 8;
+    white-space: nowrap;
   }
   @keyframes tap-hint-pulse {
     0%, 100% { transform: translateX(-50%) scale(1); }
@@ -642,7 +660,7 @@
 
   .legendary-glow {
     position: absolute;
-    width: 320px; height: 320px;
+    width: clamp(260px, 65vmin, 480px); height: clamp(260px, 65vmin, 480px);
     border-radius: 50%;
     background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, transparent 70%);
     animation: glow-pulse 1.5s ease-in-out infinite;
@@ -651,6 +669,29 @@
   @keyframes glow-pulse {
     0%, 100% { transform: scale(1); opacity: 0.6; }
     50% { transform: scale(1.3); opacity: 1; }
+  }
+
+  /* 横屏适配：设备短边时压缩房子和地面比例，避免门口场景太挤 */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .house { height: 60%; bottom: 25%; }
+    .ground { height: 25%; }
+    .door { height: clamp(80px, 30vh, 130px); width: clamp(60px, 18vh, 100px); }
+    .house-window { width: clamp(40px, 14vh, 80px); height: clamp(40px, 14vh, 80px); top: 12px; }
+    .table { height: 22%; }
+    .package-big { width: clamp(180px, 55vmin, 320px); height: clamp(180px, 55vmin, 320px); margin-top: 0; }
+    .scene-title { top: clamp(40px, 6vh, 70px); }
+    .map-progress { bottom: 6px; }
+    .stage-title { top: clamp(40px, 6vh, 60px); }
+    .toy-name { margin-top: 8px; }
+    .big-btn { margin-top: clamp(8px, 1vh, 16px); }
+  }
+
+  /* 极小屏（旧手机）补充：进度条字号最小化，文字不换行 */
+  @media (max-width: 360px) {
+    .map-progress-dot { width: 24px; height: 24px; font-size: 12px; }
+    .scene-title, .stage-title { font-size: 18px; }
+    .shop-card { width: 92px; }
+    .shop-card .pkg-icon { width: 56px; height: 56px; }
   }
 
   /* ============ 物流地图场景 ============ */
@@ -788,7 +829,7 @@
   .home-target {
     position: absolute;
     right: 10%; bottom: 28%;
-    width: 110px; height: 110px;
+    width: clamp(80px, 18vmin, 160px); height: clamp(80px, 18vmin, 160px);
     z-index: 3;
   }
   .home-target svg { width: 100%; height: 100%; }
@@ -797,8 +838,9 @@
   .map-vehicle {
     position: absolute;
     bottom: 18%;
-    left: -260px;
-    width: 240px; height: 180px;
+    left: -300px;
+    width: clamp(200px, 50vmin, 400px); height: auto;
+    aspect-ratio: 280 / 160;
     z-index: 5;
   }
   .map-vehicle svg { width: 100%; height: 100%; }
@@ -816,14 +858,14 @@
 
   .stage-title {
     position: absolute;
-    top: 80px; left: 50%; transform: translateX(-50%);
-    font-size: 28px; font-weight: bold;
+    top: clamp(54px, 9vmin, 90px); left: 50%; transform: translateX(-50%);
+    font-size: clamp(16px, 3.6vmin, 28px); font-weight: bold;
     color: #fff;
     text-shadow: 3px 3px 0 #ff6b9d, 4px 4px 0 rgba(0,0,0,0.2);
     z-index: 10;
     text-align: center;
     background: rgba(0,0,0,0.3);
-    padding: 10px 24px;
+    padding: clamp(6px, 1.4vmin, 12px) clamp(14px, 3vmin, 28px);
     border-radius: 999px;
     backdrop-filter: blur(4px);
     white-space: nowrap;
@@ -831,23 +873,25 @@
 
   .map-progress {
     position: absolute;
-    bottom: 16px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 4px;
+    bottom: clamp(8px, 2vmin, 20px); left: 50%; transform: translateX(-50%);
+    display: flex; gap: clamp(2px, 0.5vmin, 6px);
     background: rgba(255,255,255,0.9);
-    padding: 8px 14px;
+    padding: clamp(4px, 1vmin, 10px) clamp(8px, 2vmin, 16px);
     border-radius: 999px;
     border: 3px solid #fff;
     box-shadow: 0 6px 14px rgba(0,0,0,0.2);
     z-index: 10;
+    max-width: 96vw;
   }
   .map-progress-dot {
-    width: 36px; height: 36px;
+    width: clamp(26px, 5vmin, 42px); height: clamp(26px, 5vmin, 42px);
     border-radius: 50%;
     background: #e9ecef;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    font-size: clamp(13px, 2.6vmin, 20px);
     transition: all 0.3s;
     position: relative;
+    flex-shrink: 0;
   }
   .map-progress-dot.done {
     background: #2ec4b6;
@@ -919,7 +963,7 @@
     <div class="delivery-truck" id="truck"></div>
     <div class="package-on-doorstep" id="packageDoor" style="display:none"></div>
     <div class="tap-hint" id="doorHint" style="display:none">👆 点一下打开</div>
-    <div class="shop-row" id="shopRow" style="position:absolute; bottom:32px; left:0; right:0; display:none; z-index:9"></div>
+    <div class="shop-row" id="shopRow" style="position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px) + 24px); left:0; right:0; display:none; z-index:9"></div>
   </div>
 
   <!-- 场景：物流地图 -->
