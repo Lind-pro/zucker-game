@@ -782,6 +782,357 @@
     .shop-card .pkg-icon { width: 56px; height: 56px; }
   }
 
+  /* ============ 电梯场景 ============ */
+  .elevator-scene {
+    background: #2a2a2a;
+    overflow: hidden;
+  }
+  .elev-interior {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, #b8b8b0 0%, #8a8a82 60%, #4a4a44 100%);
+    /* 墙面纹理：垂直金属拉丝 */
+    background-image:
+      repeating-linear-gradient(90deg,
+        transparent 0 18px,
+        rgba(0,0,0,0.08) 18px 19px),
+      linear-gradient(180deg, #b8b8b0 0%, #8a8a82 60%, #4a4a44 100%);
+    z-index: 0;
+  }
+  .elev-interior::before {
+    /* 顶部装饰条 */
+    content: ""; position: absolute;
+    top: 0; left: 0; right: 0; height: 8%;
+    background: linear-gradient(180deg, #d4b483 0%, #8a7858 100%);
+    border-bottom: 3px solid #5a4838;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .elev-interior::after {
+    /* 地板 */
+    content: ""; position: absolute;
+    bottom: 0; left: 0; right: 0; height: 12%;
+    background:
+      repeating-linear-gradient(90deg,
+        #5a4838 0 60px, #4a3828 60px 62px),
+      #5a4838;
+    border-top: 3px solid #3a2818;
+    box-shadow: 0 -4px 8px rgba(0,0,0,0.3) inset;
+  }
+  .elev-mirror {
+    position: absolute;
+    top: 16%; left: 18%; right: 18%; bottom: 30%;
+    background: linear-gradient(135deg,
+      rgba(220,230,240,0.55) 0%,
+      rgba(180,200,220,0.4) 40%,
+      rgba(160,180,200,0.3) 100%);
+    border: clamp(3px, 0.8vmin, 6px) solid #8a7858;
+    border-radius: 4px;
+    box-shadow:
+      0 0 0 2px #5a4838,
+      inset 0 0 30px rgba(255,255,255,0.4);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .elev-mirror::before {
+    /* 镜面反光 */
+    content: ""; position: absolute;
+    top: 5%; left: 5%; width: 30%; height: 35%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 100%);
+    transform: skewY(-5deg);
+  }
+  .elev-handrail {
+    position: absolute;
+    bottom: 32%; left: 12%; right: 12%;
+    height: 6px;
+    background: linear-gradient(180deg, #d4d4cc 0%, #a8a8a0 100%);
+    border-radius: 3px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    z-index: 2;
+  }
+  .elev-handrail::before, .elev-handrail::after {
+    content: ""; position: absolute;
+    width: 4px; height: 22px;
+    background: #888;
+    top: 6px;
+  }
+  .elev-handrail::before { left: 0; }
+  .elev-handrail::after { right: 0; }
+  .elev-light {
+    position: absolute;
+    top: 4%; left: 50%; transform: translateX(-50%);
+    width: 30%; height: 14px;
+    background: radial-gradient(ellipse, #fff8b0 0%, #ffd60a 60%, transparent 100%);
+    border-radius: 50%;
+    z-index: 1;
+    filter: blur(2px);
+  }
+
+  /* 楼层显示屏 */
+  .elev-display-frame {
+    position: absolute;
+    top: clamp(54px, 9vmin, 90px);
+    left: 50%; transform: translateX(-50%);
+    background: linear-gradient(180deg, #5a4838 0%, #3a2818 100%);
+    border: 3px solid #2a1808;
+    border-radius: 10px;
+    padding: clamp(6px, 1.4vmin, 12px) clamp(14px, 3vmin, 24px);
+    z-index: 8;
+    box-shadow:
+      0 6px 12px rgba(0,0,0,0.4),
+      inset 0 2px 4px rgba(255,255,255,0.15);
+  }
+  .elev-display {
+    background: #0a0a0a;
+    border: 2px solid #000;
+    border-radius: 4px;
+    padding: clamp(4px, 1vmin, 8px) clamp(12px, 2.5vmin, 20px);
+    display: flex; align-items: center; gap: clamp(6px, 1.2vmin, 12px);
+    font-family: "Courier New", "Menlo", monospace;
+    font-size: clamp(28px, 7vmin, 52px);
+    font-weight: bold;
+    color: #ff3838;
+    text-shadow: 0 0 10px #ff3838, 0 0 20px rgba(255,56,56,0.6);
+    box-shadow: inset 0 0 16px rgba(255,56,56,0.15);
+  }
+  .elev-arrow {
+    color: #2ec4b6;
+    text-shadow: 0 0 8px #2ec4b6;
+    font-size: 0.6em;
+    animation: arrow-blink 0.8s ease-in-out infinite;
+  }
+  .elev-arrow.idle { animation: none; opacity: 0.3; }
+  @keyframes arrow-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .elev-suffix { color: #ffd60a; text-shadow: 0 0 8px #ffd60a; font-size: 0.7em; }
+
+  /* 电梯门 */
+  .elev-doors {
+    position: absolute;
+    top: 8%; left: 6%; right: 6%; bottom: 12%;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .elev-door {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 50%;
+    background:
+      repeating-linear-gradient(180deg,
+        transparent 0 32px,
+        rgba(0,0,0,0.06) 32px 34px),
+      linear-gradient(180deg, #d8d8d2 0%, #aaaaa2 70%, #888880 100%);
+    border: 3px solid #555;
+    box-shadow:
+      inset 0 0 30px rgba(0,0,0,0.2);
+    transition: transform 1.4s cubic-bezier(0.7, 0, 0.3, 1);
+  }
+  .elev-door-left { left: 0; border-right: 1.5px solid #444; }
+  .elev-door-right { right: 0; border-left: 1.5px solid #444; }
+  .elev-door::after {
+    /* 门把手 */
+    content: ""; position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 8px; height: clamp(36px, 8vmin, 60px);
+    background: linear-gradient(180deg, #ffd60a 0%, #b8860b 100%);
+    border: 1px solid #5a4030;
+    border-radius: 4px;
+  }
+  .elev-door-left::after { right: 12px; }
+  .elev-door-right::after { left: 12px; }
+  .elev-doors.open .elev-door-left { transform: translateX(-105%); }
+  .elev-doors.open .elev-door-right { transform: translateX(105%); }
+
+  /* 走廊（电梯门后） */
+  .hallway-bg {
+    position: absolute;
+    top: 8%; left: 6%; right: 6%; bottom: 12%;
+    z-index: 4;
+    overflow: hidden;
+    background: linear-gradient(180deg, #fff5e1 0%, #f4d9a4 60%, #d4a373 100%);
+  }
+  .hallway-floor {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 30%;
+    background:
+      repeating-linear-gradient(90deg,
+        #8b5a2b 0 80px, #6b3410 80px 82px),
+      #8b5a2b;
+    box-shadow: 0 -8px 20px rgba(0,0,0,0.3) inset;
+  }
+  .hallway-walls {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, transparent 0 60%, rgba(0,0,0,0.15) 100%);
+  }
+  .hallway-walls::before {
+    /* 顶灯 */
+    content: ""; position: absolute;
+    top: 4px; left: 50%; transform: translateX(-50%);
+    width: 18%; height: 12px;
+    background: radial-gradient(ellipse, #fff8b0 0%, #ffd60a 60%, transparent 100%);
+    border-radius: 50%;
+    filter: blur(1px);
+  }
+  .hallway-doors {
+    position: absolute;
+    top: 18%; left: 5%; right: 5%; bottom: 32%;
+    display: flex; justify-content: space-around; align-items: stretch;
+    gap: clamp(6px, 1.5vmin, 14px);
+  }
+  .apt-door {
+    flex: 1;
+    background: linear-gradient(180deg, #a06030 0%, #6b3410 100%);
+    border: 4px solid #3a1d05;
+    border-radius: 6px 6px 0 0;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    min-width: 0;
+  }
+  .apt-door:active { transform: translateY(2px) scale(0.97); }
+  .apt-door.selected {
+    box-shadow: 0 0 0 4px #ffd60a, 0 0 30px #ffd60a, 0 6px 14px rgba(0,0,0,0.3);
+    animation: door-glow 0.6s ease-in-out;
+  }
+  @keyframes door-glow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .apt-door-num {
+    position: absolute;
+    top: clamp(8px, 2vmin, 16px); left: 50%; transform: translateX(-50%);
+    background: #fff;
+    border: 2px solid #1d3557;
+    border-radius: 4px;
+    padding: clamp(2px, 0.6vmin, 6px) clamp(6px, 1.4vmin, 12px);
+    font-size: clamp(14px, 3vmin, 24px);
+    font-weight: bold;
+    color: #1d3557;
+    font-family: "Courier New", monospace;
+  }
+  .apt-door-knob {
+    position: absolute;
+    top: 60%; right: clamp(6px, 1.5vmin, 12px);
+    width: clamp(8px, 2vmin, 14px); height: clamp(8px, 2vmin, 14px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffd60a 0%, #b8860b 100%);
+    border: 1px solid #7a5410;
+  }
+
+  /* 选择面板 */
+  .elev-panel {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: linear-gradient(180deg, #f8f8f4 0%, #e0e0d8 100%);
+    border: 4px solid #5a4838;
+    border-radius: 14px;
+    padding: clamp(14px, 3vmin, 24px) clamp(16px, 3.5vmin, 28px);
+    z-index: 9;
+    box-shadow:
+      0 12px 24px rgba(0,0,0,0.4),
+      inset 0 2px 4px rgba(255,255,255,0.6);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .elev-panel.hiding {
+    opacity: 0; transform: translate(-50%, -50%) scale(0.85);
+    pointer-events: none;
+  }
+  .elev-panel-title {
+    text-align: center;
+    font-size: clamp(16px, 3.6vmin, 26px);
+    font-weight: bold;
+    color: #1d3557;
+    margin-bottom: clamp(10px, 2vmin, 18px);
+    white-space: nowrap;
+  }
+  .elev-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(8px, 1.6vmin, 14px);
+  }
+  .elev-buttons.rooms-2 { grid-template-columns: repeat(2, 1fr); }
+  .elev-btn {
+    width: clamp(50px, 11vmin, 80px);
+    height: clamp(50px, 11vmin, 80px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fdfdfa 0%, #d8d8d0 60%, #b0b0a8 100%);
+    border: 3px solid #5a4838;
+    font-size: clamp(20px, 4.5vmin, 32px);
+    font-weight: bold;
+    font-family: "Courier New", monospace;
+    color: #1d3557;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow:
+      0 5px 0 #6a584a,
+      0 8px 14px rgba(0,0,0,0.25),
+      inset 0 2px 3px rgba(255,255,255,0.7);
+  }
+  .elev-btn:active, .elev-btn.pressed {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #6a584a, 0 3px 6px rgba(0,0,0,0.2);
+    background: radial-gradient(circle at 30% 30%, #ff6868 0%, #cc2828 80%);
+    color: #fff;
+    text-shadow: 0 0 6px #fff8;
+  }
+  .elev-btn.pressed {
+    box-shadow:
+      0 0 24px #ff4444,
+      0 2px 0 #6a584a,
+      inset 0 0 8px rgba(255,255,255,0.5);
+    animation: btn-pulse 0.6s ease-in-out;
+  }
+  @keyframes btn-pulse {
+    0%, 100% { transform: translateY(3px); }
+    50% { transform: translateY(3px) scale(1.08); }
+  }
+
+  /* 电梯抖动 */
+  .elev-doors.shaking, .elev-display-frame.shaking, .elev-mirror.shaking {
+    animation: elev-shake 0.4s ease-in-out infinite;
+  }
+  @keyframes elev-shake {
+    0%, 100% { transform: translateX(-50%); }
+    25% { transform: translateX(calc(-50% - 1px)) translateY(0.5px); }
+    75% { transform: translateX(calc(-50% + 1px)) translateY(-0.5px); }
+  }
+  .elev-doors.shaking { animation: elev-shake-doors 0.4s ease-in-out infinite; }
+  .elev-mirror.shaking { animation: elev-shake-mirror 0.4s ease-in-out infinite; }
+  @keyframes elev-shake-doors {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(0.8px); }
+    75% { transform: translateY(-0.8px); }
+  }
+  @keyframes elev-shake-mirror {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(0.5px); }
+    75% { transform: translateY(-0.5px); }
+  }
+
+  .delivery-msg {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: clamp(12px, 2.5vmin, 20px) clamp(20px, 4vmin, 36px);
+    border-radius: 999px;
+    border: 3px solid #ffd60a;
+    font-size: clamp(18px, 3.8vmin, 28px);
+    font-weight: bold;
+    z-index: 20;
+    box-shadow: 0 0 30px #ffd60a, 0 8px 16px rgba(0,0,0,0.4);
+    white-space: nowrap;
+    animation: msg-pop 0.4s ease-out;
+  }
+  .delivery-msg.hidden { display: none; }
+  @keyframes msg-pop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+
   /* ============ 物流地图场景（俯视 SVG 图） ============ */
   .map-svg {
     position: absolute;
@@ -1392,8 +1743,8 @@
         </g>
         <rect x="15" y="78" width="40" height="55" fill="none" stroke="#3a1d05" stroke-width="2" rx="3"/>
         <rect x="65" y="78" width="40" height="55" fill="none" stroke="#3a1d05" stroke-width="2" rx="3"/>
-        <rect x="42" y="60" width="36" height="14" fill="#fff" stroke="#1d3557" stroke-width="1" rx="2"/>
-        <text x="60" y="71" text-anchor="middle" font-size="11" font-weight="bold" fill="#1d3557" font-family="sans-serif">88</text>
+        <rect x="38" y="58" width="44" height="16" fill="#fff" stroke="#1d3557" stroke-width="1" rx="2"/>
+        <text id="doorNumberText" x="60" y="71" text-anchor="middle" font-size="12" font-weight="bold" fill="#1d3557" font-family="sans-serif">88</text>
         <rect x="98" y="100" width="14" height="18" fill="#b8860b" rx="2"/>
         <circle cx="105" cy="110" r="5" fill="#ffd60a" stroke="#7c5e10" stroke-width="1"/>
         <circle cx="105" cy="110" r="2" fill="#fff" opacity="0.7"/>
@@ -1504,6 +1855,46 @@
     </div>
     <div class="checkpoint-toast" id="checkpointToast"></div>
     <div class="map-progress" id="mapProgress"></div>
+  </div>
+
+  <!-- 场景：电梯（选楼层 + 选房间）-->
+  <div class="scene elevator-scene hidden" id="sceneElevator">
+    <div class="elev-interior"></div>
+    <div class="elev-mirror"></div>
+    <div class="elev-handrail"></div>
+    <div class="elev-light"></div>
+
+    <!-- 楼层显示屏 -->
+    <div class="elev-display-frame">
+      <div class="elev-display">
+        <span class="elev-arrow" id="elevArrow">▲</span>
+        <span class="elev-num" id="elevDisplayNum">1</span>
+        <span class="elev-suffix">F</span>
+      </div>
+    </div>
+
+    <!-- 走廊（电梯门后面） -->
+    <div class="hallway-bg" id="hallwayBg">
+      <div class="hallway-floor"></div>
+      <div class="hallway-walls"></div>
+      <div class="hallway-doors" id="hallwayDoors"></div>
+    </div>
+
+    <!-- 电梯门 -->
+    <div class="elev-doors" id="elevDoors">
+      <div class="elev-door elev-door-left"></div>
+      <div class="elev-door elev-door-right"></div>
+    </div>
+
+    <!-- 选择面板 -->
+    <div class="elev-panel" id="elevPanel">
+      <div class="elev-panel-title" id="elevPanelTitle">🛗 请选择楼层</div>
+      <div class="elev-buttons" id="elevButtons"></div>
+    </div>
+
+    <!-- 提示 -->
+    <div class="scene-title" id="elevTitle">🛗 电梯</div>
+    <div class="delivery-msg hidden" id="deliveryMsg"></div>
   </div>
 
   <!-- 场景：拆箱 -->
@@ -2693,6 +3084,28 @@ const SFX = {
     playTone(1200, 0.15, 'sine', 0.18);
     setTimeout(() => playTone(1600, 0.2, 'sine', 0.15), 80);
   },
+  elevBeep: () => {
+    playTone(1200, 0.06, 'square', 0.18);
+  },
+  elevTick: () => {
+    playTone(680, 0.05, 'sine', 0.12);
+  },
+  elevDing: () => {
+    playTone(1320, 0.18, 'sine', 0.2);
+    setTimeout(() => playTone(990, 0.32, 'sine', 0.18), 200);
+  },
+  elevDoor: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1.2);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.2);
+  },
 };
 
 // ============================================================
@@ -2701,12 +3114,159 @@ const SFX = {
 const $ = id => document.getElementById(id);
 const sceneDoor = $('sceneDoor');
 const sceneMap = $('sceneMap');
+const sceneElevator = $('sceneElevator');
 const sceneUnbox = $('sceneUnbox');
 const sceneReveal = $('sceneReveal');
 
 function showScene(scene) {
-  [sceneDoor, sceneMap, sceneUnbox, sceneReveal].forEach(s => s.classList.add('hidden'));
+  [sceneDoor, sceneMap, sceneElevator, sceneUnbox, sceneReveal].forEach(s => s.classList.add('hidden'));
   scene.classList.remove('hidden');
+}
+
+// ============================================================
+// 电梯：选楼层 + 选房号
+// ============================================================
+let currentApartment = 88;  // 默认门牌
+
+function selectFloor() {
+  const panel = $('elevPanel');
+  $('elevPanelTitle').textContent = '🛗 请选择楼层';
+  panel.classList.remove('hiding');
+  const buttonsEl = $('elevButtons');
+  buttonsEl.innerHTML = '';
+  buttonsEl.className = 'elev-buttons';
+  return new Promise(resolve => {
+    for (let f = 1; f <= 9; f++) {
+      const btn = document.createElement('button');
+      btn.className = 'elev-btn';
+      btn.textContent = f;
+      btn.onclick = () => {
+        if (btn.classList.contains('pressed')) return;
+        // 取消其他选中
+        buttonsEl.querySelectorAll('.elev-btn').forEach(b => b.classList.remove('pressed'));
+        btn.classList.add('pressed');
+        SFX.elevBeep();
+        setTimeout(() => {
+          panel.classList.add('hiding');
+          resolve(f);
+        }, 700);
+      };
+      buttonsEl.appendChild(btn);
+    }
+  });
+}
+
+async function playAscent(targetFloor) {
+  $('elevArrow').classList.remove('idle');
+  // 抖动
+  $('elevDoors').classList.add('shaking');
+  $('elevDisplayFrame')?.classList.add('shaking');
+  document.querySelector('.elev-mirror').classList.add('shaking');
+  SFX.elevDoor();
+
+  return new Promise(resolve => {
+    let current = 1;
+    $('elevDisplayNum').textContent = current;
+    const tickEvery = 600;
+    const tick = setInterval(() => {
+      current++;
+      $('elevDisplayNum').textContent = current;
+      if (current === targetFloor) {
+        clearInterval(tick);
+        // 停止抖动
+        setTimeout(() => {
+          $('elevDoors').classList.remove('shaking');
+          document.querySelector('.elev-mirror').classList.remove('shaking');
+          $('elevArrow').classList.add('idle');
+          SFX.elevDing();
+          resolve();
+        }, 400);
+      } else {
+        SFX.elevTick();
+      }
+    }, tickEvery);
+  });
+}
+
+function renderApartmentDoors(floor) {
+  const doors = $('hallwayDoors');
+  doors.innerHTML = '';
+  // 4 个房间：floor*100 + 01..04
+  const rooms = [1, 2, 3, 4];
+  rooms.forEach(r => {
+    const num = floor * 100 + r;
+    const door = document.createElement('div');
+    door.className = 'apt-door';
+    door.dataset.room = r;
+    door.dataset.num = num;
+    door.innerHTML = `
+      <div class="apt-door-num">${num}</div>
+      <div class="apt-door-knob"></div>
+    `;
+    doors.appendChild(door);
+  });
+}
+
+function selectApartment(floor) {
+  return new Promise(resolve => {
+    $('hallwayDoors').querySelectorAll('.apt-door').forEach(door => {
+      door.onclick = () => {
+        if (door.classList.contains('selected')) return;
+        $('hallwayDoors').querySelectorAll('.apt-door').forEach(d => d.classList.remove('selected'));
+        door.classList.add('selected');
+        SFX.elevBeep();
+        setTimeout(() => SFX.ding(), 250);
+        const num = parseInt(door.dataset.num, 10);
+        setTimeout(() => resolve(num), 1100);
+      };
+    });
+  });
+}
+
+async function playElevator() {
+  showScene(sceneElevator);
+  // 重置状态
+  $('elevDoors').classList.remove('open');
+  $('elevDoors').classList.remove('shaking');
+  $('elevArrow').classList.add('idle');
+  $('elevDisplayNum').textContent = '1';
+  $('elevPanel').classList.remove('hiding');
+  $('hallwayDoors').innerHTML = '';
+  $('deliveryMsg').classList.add('hidden');
+
+  // 阶段 1：选楼层
+  $('elevTitle').textContent = '🛗 电梯';
+  const floor = await selectFloor();
+
+  // 阶段 2：上升
+  await new Promise(r => setTimeout(r, 300));
+  await playAscent(floor);
+
+  // 阶段 3：开门 → 显示走廊
+  renderApartmentDoors(floor);
+  $('elevDoors').classList.add('open');
+  SFX.elevDoor();
+  await new Promise(r => setTimeout(r, 1400));
+
+  // 阶段 4：选房号
+  $('elevPanelTitle').textContent = `🚪 ${floor} 楼，选个家吧`;
+  $('elevPanel').classList.remove('hiding');
+  // 清空选择面板（这次不用按钮，让用户直接点门）
+  $('elevButtons').innerHTML = '';
+  // 实际还是用 panel 显示提示，房号选择走廊里的门
+  setTimeout(() => $('elevPanel').classList.add('hiding'), 1400);
+
+  const apartmentNum = await selectApartment(floor);
+  currentApartment = apartmentNum;
+
+  // 阶段 5：派送提示
+  const msg = $('deliveryMsg');
+  msg.textContent = `📦 派送至 ${apartmentNum} 号 ...`;
+  msg.classList.remove('hidden');
+  await new Promise(r => setTimeout(r, 1200));
+  msg.classList.add('hidden');
+
+  arriveAtDoor();
 }
 
 function updateTopbar() {
@@ -3129,9 +3689,9 @@ async function playJourney() {
 
         buildMapProgress(journey.stages.length, journey.stages);
         highlightWaypoint(points.length - 1);
-        $('trackingCurrent').textContent = '🏠 派送完成 · 等待签收';
+        $('trackingCurrent').textContent = '🏠 已到楼下 · 准备上楼';
         setTimeout(() => {
-          arriveAtDoor();
+          playElevator();
           resolve();
         }, 600);
       }
@@ -3144,10 +3704,13 @@ function arriveAtDoor() {
   showScene(sceneDoor);
   $('truck').style.display = 'none';
   $('shopRow').style.display = 'none';
+  // 把房子门牌号刷成电梯里选的房号
+  const doorNum = $('doorNumberText');
+  if (doorNum) doorNum.textContent = String(currentApartment);
   $('packageDoor').innerHTML = svgWrap(currentBox.pkg);
   $('packageDoor').style.display = 'block';
   $('doorHint').style.display = 'block';
-  $('doorTitle').textContent = '快递到啦！🎉';
+  $('doorTitle').textContent = `快递到 ${currentApartment} 号啦！🎉`;
   SFX.doorbell();
   setTimeout(() => SFX.ding(), 400);
 }
