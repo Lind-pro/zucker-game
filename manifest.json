@@ -1,7 +1,7 @@
 {
-  "name": "拆快递大冒险",
-  "short_name": "拆快递",
-  "description": "拆快递盲盒、收集玩具，让娃满足拆箱的快乐",
+  "name": "小朋友游戏屋",
+  "short_name": "游戏屋",
+  "description": "给小朋友的小游戏合集",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
@@ -22,6 +22,14 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "拆快递大冒险",
+      "short_name": "拆快递",
+      "url": "./unboxing/",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
 }

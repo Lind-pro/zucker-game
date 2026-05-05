@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>汉字小博士 字</title>
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icon.svg">
+<meta name="theme-color" content="#f39c12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    font-family: "PingFang SC", "Microsoft YaHei", "STKaiti", "KaiTi", system-ui, sans-serif;
+    background: linear-gradient(180deg, #ffe8a3 0%, #ffd6a5 50%, #f4a261 100%);
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  #app {
+    position: relative; width: 100vw; height: 100vh; height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    display: flex; flex-direction: column;
+  }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: clamp(8px, 1.6vmin, 14px) clamp(12px, 2.5vmin, 22px);
+    z-index: 10;
+  }
+  .topbar-left { display: flex; gap: clamp(8px, 1.5vmin, 14px); align-items: center; }
+  .icon-btn {
+    background: rgba(255,255,255,0.95);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: clamp(42px, 8vmin, 56px); height: clamp(42px, 8vmin, 56px);
+    font-size: clamp(20px, 4vmin, 26px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none; color: #1d3557; padding: 0;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+  .stars-display {
+    background: linear-gradient(180deg, #ffd60a 0%, #f4a700 100%);
+    color: #fff; font-weight: bold;
+    border: 3px solid #fff; border-radius: 999px;
+    padding: clamp(6px, 1.2vmin, 10px) clamp(14px, 3vmin, 22px);
+    font-size: clamp(18px, 3.5vmin, 24px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    text-shadow: 1px 1px 0 #b8860b;
+  }
+  .level-badge {
+    background: rgba(255,255,255,0.95);
+    color: #1d3557;
+    border: 3px solid #fff; border-radius: 999px;
+    padding: clamp(4px, 1vmin, 8px) clamp(10px, 2vmin, 16px);
+    font-size: clamp(13px, 2.5vmin, 17px);
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  main {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    padding: clamp(8px, 2vmin, 16px) clamp(16px, 3vmin, 28px);
+    overflow: hidden;
+  }
+
+  .question-card {
+    width: 100%; max-width: 560px;
+    background: rgba(255,255,255,0.95);
+    border: 5px solid #f39c12;
+    border-radius: 24px;
+    padding: clamp(16px, 3vmin, 28px);
+    box-shadow: 0 8px 0 #b8730a, 0 12px 30px rgba(0,0,0,0.2);
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .question-text {
+    font-size: clamp(20px, 4.2vmin, 28px);
+    font-weight: bold; color: #1d3557;
+    margin-bottom: clamp(10px, 2vmin, 18px);
+  }
+  .question-content {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: clamp(4px, 1vmin, 12px);
+    min-height: clamp(80px, 18vmin, 150px);
+  }
+
+  /* 大汉字（题面） */
+  .big-char {
+    font-size: clamp(80px, 18vmin, 140px);
+    font-weight: bold;
+    line-height: 1;
+    color: #d35400;
+    text-shadow: 6px 6px 0 #ffd60a, 8px 8px 0 rgba(0,0,0,0.18);
+    font-family: "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", serif;
+  }
+  .big-pic {
+    font-size: clamp(70px, 16vmin, 130px);
+    line-height: 1;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+  }
+  .pinyin-hint {
+    font-size: clamp(16px, 3vmin, 22px);
+    color: #5a6c84;
+    margin-top: 6px;
+    font-family: "Times New Roman", serif;
+    font-style: italic;
+    letter-spacing: 2px;
+  }
+
+  /* 听字 */
+  .speak-area {
+    display: flex; flex-direction: column;
+    gap: clamp(10px, 2vmin, 16px);
+    align-items: center;
+  }
+  .speak-btn {
+    width: clamp(80px, 16vmin, 120px); height: clamp(80px, 16vmin, 120px);
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffd60a 0%, #f4a700 100%);
+    border: 5px solid #fff;
+    font-size: clamp(40px, 8vmin, 60px);
+    cursor: pointer;
+    box-shadow: 0 6px 0 #b8860b, 0 12px 20px rgba(0,0,0,0.2);
+    animation: speaker-pulse 1.5s ease-in-out infinite;
+  }
+  .speak-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #b8860b; }
+  @keyframes speaker-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .speak-hint { font-size: clamp(14px, 2.8vmin, 18px); color: #5a6c84; }
+
+  /* 选项 */
+  .choices {
+    width: 100%; max-width: 560px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 40vw), 1fr));
+    gap: clamp(10px, 2vmin, 18px);
+    margin-top: clamp(14px, 3vmin, 24px);
+  }
+  .choice {
+    aspect-ratio: 1.1 / 1;
+    background: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
+    border: 5px solid #f39c12;
+    border-radius: 20px;
+    font-size: clamp(48px, 10vmin, 70px);
+    font-weight: bold;
+    color: #d35400;
+    font-family: "STKaiti", "KaiTi", "PingFang SC", serif;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #b8730a, 0 10px 18px rgba(0,0,0,0.15);
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    line-height: 1;
+    padding: 6px;
+    overflow: hidden;
+  }
+  .choice .choice-pinyin {
+    font-size: clamp(11px, 1.8vmin, 14px);
+    color: #5a6c84;
+    font-family: "Times New Roman", serif;
+    font-style: italic;
+    margin-top: 4px;
+    font-weight: normal;
+  }
+  .choice.pic { font-size: clamp(40px, 9vmin, 64px); }
+  .choice:active {
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 #b8730a, 0 5px 10px rgba(0,0,0,0.15);
+  }
+  .choice.correct {
+    background: linear-gradient(180deg, #b3f5b3 0%, #4ecdc4 100%);
+    border-color: #2ec4b6;
+    box-shadow: 0 6px 0 #1a8e85, 0 0 30px #4ecdc4;
+    animation: correct-bounce 0.6s ease-out;
+  }
+  .choice.wrong {
+    background: linear-gradient(180deg, #ffcccc 0%, #ff9999 100%);
+    border-color: #e63946;
+    animation: wrong-shake 0.5s;
+  }
+  @keyframes correct-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+  @keyframes wrong-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .toast {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85); color: #fff;
+    padding: clamp(12px, 2.5vmin, 20px) clamp(20px, 4vmin, 36px);
+    border-radius: 999px;
+    font-size: clamp(20px, 4vmin, 28px);
+    font-weight: bold;
+    z-index: 100;
+    pointer-events: none;
+    animation: toast-pop 1.2s ease-out forwards;
+  }
+  @keyframes toast-pop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -70%) scale(1); opacity: 0; }
+  }
+
+  .celebration {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .celebration.hidden { display: none; }
+  .cel-card {
+    background: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
+    border: 6px solid #ffd60a;
+    border-radius: 28px;
+    padding: clamp(24px, 5vmin, 40px) clamp(28px, 6vmin, 48px);
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    animation: cel-pop 0.6s cubic-bezier(.5,1.6,.4,1);
+  }
+  @keyframes cel-pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .cel-emoji { font-size: clamp(60px, 14vmin, 100px); margin-bottom: 12px; animation: cel-spin 1s ease-out; }
+  @keyframes cel-spin {
+    0% { transform: rotate(-180deg) scale(0); }
+    100% { transform: rotate(0) scale(1); }
+  }
+  .cel-text {
+    font-size: clamp(24px, 5vmin, 36px); font-weight: bold;
+    color: #d35400;
+    text-shadow: 2px 2px 0 #fff;
+    margin-bottom: 10px;
+  }
+  .cel-stars { font-size: clamp(28px, 6vmin, 42px); margin-bottom: 20px; letter-spacing: 6px; }
+  .cel-btn {
+    background: linear-gradient(180deg, #ff6b9d 0%, #ff4081 100%);
+    color: #fff;
+    border: 4px solid #fff;
+    border-radius: 999px;
+    padding: clamp(12px, 2.5vmin, 20px) clamp(28px, 6vmin, 48px);
+    font-size: clamp(20px, 4vmin, 28px);
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #c2185b, 0 10px 18px rgba(0,0,0,0.25);
+  }
+  .cel-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #c2185b; }
+
+  .confetti {
+    position: absolute; width: 12px; height: 12px;
+    pointer-events: none;
+    animation: confetti-fall 2s linear forwards;
+  }
+  @keyframes confetti-fall {
+    from { transform: translateY(-20px) rotate(0); opacity: 1; }
+    to { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="icon-btn" href="../" aria-label="返回">🏠</a>
+      <div class="stars-display">⭐ <span id="stars">0</span></div>
+    </div>
+    <div class="topbar-left">
+      <div class="level-badge" id="levelBadge">12 字</div>
+      <button class="icon-btn" id="muteBtn" aria-label="静音">🔊</button>
+    </div>
+  </div>
+
+  <main>
+    <div class="question-card">
+      <div class="question-text" id="qText">看图找汉字</div>
+      <div class="question-content" id="qContent"></div>
+    </div>
+    <div class="choices" id="choices"></div>
+  </main>
+
+  <div class="celebration hidden" id="celebration">
+    <div class="cel-card">
+      <div class="cel-emoji" id="celEmoji">🎉</div>
+      <div class="cel-text" id="celText">真棒！</div>
+      <div class="cel-stars">⭐⭐⭐⭐⭐</div>
+      <button class="cel-btn" id="celBtn">继续 →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 汉字 → 拼音 + 图片（按难度排序：象形字优先）
+// ============================================================
+const CHARS = [
+  // 自然（最象形，最易）
+  { c: '日', p: 'rì',    pic: '☀️',  meaning: '太阳' },
+  { c: '月', p: 'yuè',   pic: '🌙',  meaning: '月亮' },
+  { c: '山', p: 'shān',  pic: '⛰️',  meaning: '山' },
+  { c: '水', p: 'shuǐ',  pic: '💧',  meaning: '水' },
+  { c: '火', p: 'huǒ',   pic: '🔥',  meaning: '火' },
+  { c: '木', p: 'mù',    pic: '🌳',  meaning: '树' },
+
+  // 动物（高频且形象）
+  { c: '鱼', p: 'yú',    pic: '🐟',  meaning: '鱼' },
+  { c: '鸟', p: 'niǎo',  pic: '🐦',  meaning: '鸟' },
+  { c: '马', p: 'mǎ',    pic: '🐴',  meaning: '马' },
+  { c: '牛', p: 'niú',   pic: '🐄',  meaning: '牛' },
+  { c: '猫', p: 'māo',   pic: '🐱',  meaning: '猫' },
+  { c: '狗', p: 'gǒu',   pic: '🐶',  meaning: '狗' },
+
+  // 自然 续
+  { c: '雨', p: 'yǔ',    pic: '🌧️', meaning: '下雨' },
+  { c: '雪', p: 'xuě',   pic: '❄️',  meaning: '雪' },
+  { c: '云', p: 'yún',   pic: '☁️',  meaning: '云' },
+  { c: '星', p: 'xīng',  pic: '⭐',  meaning: '星星' },
+  { c: '花', p: 'huā',   pic: '🌸',  meaning: '花' },
+  { c: '草', p: 'cǎo',   pic: '🌿',  meaning: '草' },
+
+  // 身体
+  { c: '口', p: 'kǒu',   pic: '👄',  meaning: '嘴' },
+  { c: '目', p: 'mù',    pic: '👁️', meaning: '眼睛' },
+  { c: '手', p: 'shǒu',  pic: '✋',  meaning: '手' },
+  { c: '耳', p: 'ěr',    pic: '👂',  meaning: '耳朵' },
+  { c: '心', p: 'xīn',   pic: '❤️',  meaning: '心' },
+
+  // 物品
+  { c: '车', p: 'chē',   pic: '🚗',  meaning: '汽车' },
+  { c: '门', p: 'mén',   pic: '🚪',  meaning: '门' },
+  { c: '伞', p: 'sǎn',   pic: '☂️',  meaning: '雨伞' },
+  { c: '书', p: 'shū',   pic: '📖',  meaning: '书' },
+  { c: '虫', p: 'chóng', pic: '🐛',  meaning: '虫子' },
+  { c: '兔', p: 'tù',    pic: '🐰',  meaning: '兔子' },
+];
+
+// ============================================================
+// 状态
+// ============================================================
+const STORAGE_KEY = 'characters-game-v1';
+let state = { stars: 0, totalStars: 0, muted: false };
+function load() {
+  try { Object.assign(state, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')); } catch(e) {}
+}
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// ============================================================
+// 音效
+// ============================================================
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function tone(freq, duration, type='sine', volume=0.18) {
+  if (state.muted) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + duration);
+}
+const SFX = {
+  correct: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.15, 'triangle', 0.2), i*80)); },
+  wrong: () => { tone(220, 0.2, 'square', 0.12); setTimeout(() => tone(180, 0.25, 'square', 0.1), 150); },
+  cheer: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'triangle', 0.22), i*100)); },
+};
+
+let zhVoice = null;
+function pickVoices() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices();
+  zhVoice = voices.find(v => v.lang.startsWith('zh')) || null;
+}
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = pickVoices;
+  pickVoices();
+}
+function speakZh(text) {
+  if (state.muted || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN'; u.rate = 0.8; u.pitch = 1.1;
+  if (zhVoice) u.voice = zhVoice;
+  speechSynthesis.speak(u);
+}
+
+// ============================================================
+// 难度（已得星数决定字库大小）
+// ============================================================
+function poolSize() {
+  if (state.totalStars < 8) return 12;
+  if (state.totalStars < 20) return 18;
+  if (state.totalStars < 35) return 24;
+  return CHARS.length;
+}
+function pool() { return CHARS.slice(0, poolSize()); }
+
+// ============================================================
+// 题目生成
+// ============================================================
+function rand(n) { return Math.floor(Math.random() * n); }
+function pickFrom(arr) { return arr[rand(arr.length)]; }
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rand(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function distractors(answer, n) {
+  const p = pool().filter(x => x.c !== answer.c);
+  return shuffle(p).slice(0, n);
+}
+
+// 模式：
+// 1) picToChar：看图（emoji）→ 选汉字
+// 2) charToPic：看汉字 → 选图片
+// 3) hear：听拼音 → 选汉字
+function genPicToCharQ() {
+  const ans = pickFrom(pool());
+  return { type: 'picToChar', answer: ans, choices: shuffle([ans, ...distractors(ans, 3)]) };
+}
+function genCharToPicQ() {
+  const ans = pickFrom(pool());
+  return { type: 'charToPic', answer: ans, choices: shuffle([ans, ...distractors(ans, 3)]) };
+}
+function genHearQ() {
+  const ans = pickFrom(pool());
+  return { type: 'hear', answer: ans, choices: shuffle([ans, ...distractors(ans, 3)]) };
+}
+const MODES = [genPicToCharQ, genPicToCharQ, genCharToPicQ, genHearQ];
+function genQuestion() { return pickFrom(MODES)(); }
+
+// ============================================================
+// 渲染
+// ============================================================
+let currentQ = null;
+let lockChoices = false;
+
+function render(q) {
+  currentQ = q;
+  lockChoices = false;
+  const qText = document.getElementById('qText');
+  const qContent = document.getElementById('qContent');
+  qContent.innerHTML = '';
+
+  if (q.type === 'picToChar') {
+    qText.textContent = `这是什么？请选汉字`;
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.flexDirection = 'column';
+    wrap.style.alignItems = 'center';
+    const pic = document.createElement('div');
+    pic.className = 'big-pic';
+    pic.textContent = q.answer.pic;
+    const word = document.createElement('div');
+    word.className = 'pinyin-hint';
+    word.textContent = q.answer.meaning;
+    wrap.append(pic, word);
+    qContent.appendChild(wrap);
+    setTimeout(() => speakZh(q.answer.meaning), 250);
+  } else if (q.type === 'charToPic') {
+    qText.textContent = `这个字是什么？`;
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.flexDirection = 'column';
+    wrap.style.alignItems = 'center';
+    const big = document.createElement('div');
+    big.className = 'big-char';
+    big.textContent = q.answer.c;
+    const py = document.createElement('div');
+    py.className = 'pinyin-hint';
+    py.textContent = q.answer.p;
+    wrap.append(big, py);
+    qContent.appendChild(wrap);
+    setTimeout(() => speakZh(q.answer.c), 250);
+  } else if (q.type === 'hear') {
+    qText.textContent = '听听这是哪个字？';
+    const area = document.createElement('div');
+    area.className = 'speak-area';
+    const btn = document.createElement('button');
+    btn.className = 'speak-btn';
+    btn.textContent = '🔊';
+    btn.onclick = () => speakZh(q.answer.c);
+    const hint = document.createElement('div');
+    hint.className = 'speak-hint';
+    hint.textContent = `${q.answer.p} · 点喇叭再听`;
+    area.append(btn, hint);
+    qContent.appendChild(area);
+    setTimeout(() => speakZh(q.answer.c), 300);
+  }
+  renderChoices(q);
+}
+
+function renderChoices(q) {
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  q.choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    if (q.type === 'picToChar' || q.type === 'hear') {
+      // 选汉字（带拼音小字）
+      const ch = document.createElement('div');
+      ch.textContent = c.c;
+      const py = document.createElement('div');
+      py.className = 'choice-pinyin';
+      py.textContent = c.p;
+      btn.append(ch, py);
+    } else {
+      // 选图
+      btn.textContent = c.pic;
+      btn.classList.add('pic');
+    }
+    btn.onclick = () => onChoose(btn, c);
+    choicesEl.appendChild(btn);
+  });
+}
+
+function onChoose(btn, value) {
+  if (lockChoices) return;
+  if (value.c === currentQ.answer.c) {
+    lockChoices = true;
+    btn.classList.add('correct');
+    SFX.correct();
+    speakSuccess();
+    state.stars++;
+    state.totalStars++;
+    document.getElementById('stars').textContent = state.totalStars;
+    save();
+    setTimeout(() => {
+      if (state.stars >= 5) {
+        state.stars = 0; save();
+        showCelebration();
+      } else {
+        nextQuestion();
+      }
+    }, 900);
+  } else {
+    btn.classList.add('wrong');
+    SFX.wrong();
+    showToast('再试试！');
+    setTimeout(() => btn.classList.remove('wrong'), 600);
+  }
+}
+
+function speakSuccess() {
+  const phrases = ['真棒', '答对了', '好厉害', '太棒了', '聪明'];
+  speakZh(pickFrom(phrases));
+}
+
+function nextQuestion() {
+  render(genQuestion());
+  updateLevelBadge();
+}
+
+function updateLevelBadge() {
+  document.getElementById('levelBadge').textContent = poolSize() + ' 字';
+}
+
+function showToast(text) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = text;
+  document.getElementById('app').appendChild(t);
+  setTimeout(() => t.remove(), 1300);
+}
+
+function showCelebration() {
+  const cel = document.getElementById('celebration');
+  document.getElementById('celEmoji').textContent = pickFrom(['🎉','🎊','🌟','🏆','⭐']);
+  document.getElementById('celText').textContent = pickFrom(['真棒！','了不起！','聪明！','满分啦！']);
+  cel.classList.remove('hidden');
+  SFX.cheer();
+  speakZh('真棒');
+  spawnConfetti(60);
+}
+function hideCelebration() {
+  document.getElementById('celebration').classList.add('hidden');
+  nextQuestion();
+}
+
+function spawnConfetti(n) {
+  const colors = ['#ff6b9d', '#4ecdc4', '#ffd60a', '#9b59b6', '#3498db', '#2ecc71'];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.background = pickFrom(colors);
+    c.style.animationDelay = (Math.random() * 0.5) + 's';
+    c.style.animationDuration = (1.5 + Math.random()) + 's';
+    if (Math.random() < 0.3) c.style.borderRadius = '50%';
+    document.getElementById('app').appendChild(c);
+    setTimeout(() => c.remove(), 2500);
+  }
+}
+
+document.getElementById('celBtn').onclick = hideCelebration;
+document.getElementById('muteBtn').onclick = () => {
+  state.muted = !state.muted;
+  document.getElementById('muteBtn').textContent = state.muted ? '🔇' : '🔊';
+  if (state.muted && 'speechSynthesis' in window) speechSynthesis.cancel();
+  save();
+};
+
+// 启动
+load();
+document.getElementById('stars').textContent = state.totalStars;
+document.getElementById('muteBtn').textContent = state.muted ? '🔇' : '🔊';
+nextQuestion();
+document.addEventListener('dblclick', e => e.preventDefault());
+</script>
+</body>
+</html>

@@ -1,0 +1,4130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>拆快递大冒险 🎁</title>
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icon.svg">
+<meta name="theme-color" content="#ff6b9d">
+<meta name="description" content="拆快递盲盒、收集玩具，让娃满足拆箱的快乐">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="拆快递">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    overflow: hidden;
+    background: linear-gradient(180deg, #87ceeb 0%, #ffd6e0 60%, #ffe8a3 100%);
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;          /* fallback */
+    height: 100dvh;         /* 跟随手机地址栏自适应 */
+    overflow: hidden;
+    /* iOS 刘海/底部小白条留白 */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
+  }
+
+  /* 顶部状态栏 */
+  .topbar {
+    position: absolute; top: env(safe-area-inset-top, 0); left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: clamp(8px, 1.6vmin, 14px) clamp(10px, 2.4vmin, 20px);
+    z-index: 10; pointer-events: none;
+  }
+  .coin-display, .collection-btn {
+    background: rgba(255,255,255,0.9);
+    border-radius: 999px;
+    padding: clamp(6px, 1.2vmin, 10px) clamp(12px, 2.5vmin, 20px);
+    font-size: clamp(14px, 3vmin, 22px); font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    border: 3px solid #fff;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .collection-btn:active { transform: scale(0.95); }
+  .topbar-left { display: flex; gap: clamp(6px, 1.5vmin, 12px); align-items: center; }
+  .home-link { text-decoration: none; color: #1d3557; }
+  .icon-btn {
+    background: rgba(255,255,255,0.9);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: clamp(36px, 7vmin, 50px); height: clamp(36px, 7vmin, 50px);
+    font-size: clamp(16px, 3vmin, 22px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  .bubble-counter {
+    position: absolute;
+    top: clamp(54px, 10vmin, 100px); right: clamp(10px, 3vmin, 30px);
+    background: rgba(255,107,157,0.95); color: #fff;
+    border-radius: 999px;
+    padding: clamp(5px, 1.2vmin, 9px) clamp(12px, 2.6vmin, 20px);
+    font-size: clamp(13px, 2.8vmin, 20px);
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 9;
+    border: 3px solid #fff;
+    pointer-events: none;
+  }
+  .bubble-counter.full {
+    background: linear-gradient(90deg, #f39c12, #f1c40f, #f39c12);
+    background-size: 200% 100%;
+    animation: gold-shimmer 1.2s linear infinite;
+  }
+
+  .toy-detail-content {
+    width: min(86%, 400px);
+    background: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
+    border-radius: 24px;
+    border: 6px solid #ff6b9d;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    padding: clamp(18px, 3.5vmin, 30px) clamp(16px, 3vmin, 24px);
+    display: flex; flex-direction: column; align-items: center;
+    position: relative;
+  }
+  .toy-detail-svg {
+    width: clamp(160px, 50vmin, 260px);
+    height: clamp(160px, 50vmin, 260px);
+    animation: toy-pop 0.6s cubic-bezier(.5,1.8,.4,1);
+  }
+  .toy-detail-svg svg { width: 100%; height: 100%; }
+  .toy-detail-name {
+    font-size: clamp(20px, 4.5vmin, 32px);
+    font-weight: bold; margin-top: 8px; color: #333;
+  }
+  .toy-detail-stats {
+    margin-top: 12px;
+    color: #666;
+    font-size: clamp(14px, 2.8vmin, 18px);
+    line-height: 1.7;
+    text-align: center;
+  }
+  .toy-detail-content .close-btn {
+    position: absolute; top: 10px; right: 10px;
+  }
+  .collection-cell.unlocked { cursor: pointer; }
+  .collection-cell.unlocked:active { transform: scale(0.94); }
+
+  .bonus-text {
+    margin-top: clamp(4px, 1vmin, 8px);
+    font-size: clamp(14px, 2.8vmin, 20px);
+    color: #ff6b9d;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #fff;
+    z-index: 5;
+    animation: name-bounce 0.6s ease-out 1.2s backwards;
+  }
+
+  /* 场景 */
+  .scene {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.4s;
+  }
+  .scene.hidden { opacity: 0; pointer-events: none; }
+
+  /* 场景：门口 */
+  .door-scene {
+    background: linear-gradient(180deg, #87ceeb 0%, #c1e9f5 50%, #ffd6e0 100%);
+  }
+  .house-scene-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .ground {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #c8a878 0%, #a07d4d 100%);
+  }
+  .ground::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+    background: rgba(0,0,0,0.15);
+  }
+  .house {
+    position: absolute; left: 0; right: 0; bottom: 30%;
+    height: 50%;
+    background: linear-gradient(180deg, #ffd9a0 0%, #f4c47a 100%);
+    border-top: 8px solid #c47b3a;
+  }
+  .house::before {
+    content: ""; position: absolute;
+    left: -10px; right: -10px; top: -70px;
+    height: 70px;
+    background: linear-gradient(180deg, #d65a3a 0%, #a8432a 100%);
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  }
+  .house-window {
+    position: absolute;
+    width: clamp(54px, 11vmin, 110px); height: clamp(54px, 11vmin, 110px);
+    background: linear-gradient(135deg, #a8dadc 0%, #6cb4d9 100%);
+    border: 6px solid #c47b3a;
+    border-radius: 4px;
+  }
+  .house-window::before, .house-window::after {
+    content: ""; position: absolute; background: #c47b3a;
+  }
+  .house-window::before {
+    left: 50%; top: -6px; bottom: -6px; width: 4px; transform: translateX(-50%);
+  }
+  .house-window::after {
+    top: 50%; left: -6px; right: -6px; height: 4px; transform: translateY(-50%);
+  }
+  .window-left { left: 12%; top: 30px; }
+  .window-right { right: 12%; top: 30px; }
+  .door {
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    width: clamp(72px, 14vmin, 130px); height: clamp(110px, 22vmin, 200px);
+    background: linear-gradient(180deg, #8b4513 0%, #6b3410 100%);
+    border-radius: 8px 8px 0 0;
+    border: 4px solid #5a2d0c; border-bottom: none;
+  }
+  .door::after {
+    content: ""; position: absolute; right: 14px; top: 55%;
+    width: 10px; height: 10px; border-radius: 50%; background: #ffd700;
+    box-shadow: 0 0 4px #b8860b;
+  }
+  .door-panel {
+    position: absolute; left: 50%; top: 20%; transform: translateX(-50%);
+    width: 60%; height: 30%;
+    border: 3px solid #5a2d0c;
+    border-radius: 4px;
+  }
+
+  .delivery-truck {
+    position: absolute;
+    left: -300px; bottom: 28%;
+    width: clamp(180px, 40vmin, 320px); height: auto;
+    aspect-ratio: 240 / 140;
+    z-index: 2;
+  }
+  .delivery-truck.driving { animation: drive-in 2s ease-out forwards; }
+  .delivery-truck.leaving { animation: drive-out 1.2s ease-in forwards; }
+  @keyframes drive-in {
+    0% { left: -300px; }
+    100% { left: 22%; }
+  }
+  @keyframes drive-out {
+    0% { left: 22%; }
+    100% { left: 100%; }
+  }
+  .truck-bounce { animation: truck-bounce 0.4s ease-in-out infinite; }
+  @keyframes truck-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .package-on-doorstep {
+    position: absolute; left: 50%; bottom: 28%;
+    transform: translateX(-50%);
+    width: clamp(100px, 22vmin, 180px); height: clamp(100px, 22vmin, 180px);
+    animation: drop-in 0.6s ease-out;
+    cursor: pointer;
+    filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3));
+  }
+  @keyframes drop-in {
+    0% { transform: translateX(-50%) translateY(-200px) rotate(20deg); opacity: 0; }
+    60% { transform: translateX(-50%) translateY(20px) rotate(-5deg); }
+    100% { transform: translateX(-50%) translateY(0) rotate(0); opacity: 1; }
+  }
+  .package-on-doorstep:active { transform: translateX(-50%) scale(0.92); }
+
+  .doorbell {
+    position: absolute;
+    top: 22%; left: 50%; transform: translateX(-50%);
+    font-size: 60px;
+    animation: bell-ring 0.6s ease-in-out infinite;
+    text-shadow: 0 0 20px #fff;
+  }
+  @keyframes bell-ring {
+    0%, 100% { transform: translateX(-50%) rotate(-15deg); }
+    50% { transform: translateX(-50%) rotate(15deg); }
+  }
+
+  /* 场景：拆箱 */
+  .unbox-scene {
+    background: linear-gradient(180deg, #fff7e0 0%, #ffe0a8 100%);
+  }
+  .table {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #c08855 0%, #8b5a2b 100%);
+    border-top: 6px solid #6d3f17;
+  }
+  .package-big {
+    position: relative;
+    width: clamp(240px, 60vmin, 460px); height: clamp(240px, 60vmin, 460px);
+    margin-top: -10%;
+    perspective: 600px;
+  }
+  .box-body {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, #d4a373 0%, #b8845a 100%);
+    border-radius: 8px;
+    box-shadow:
+      0 12px 30px rgba(0,0,0,0.3),
+      inset 0 -10px 0 rgba(0,0,0,0.15),
+      inset 4px 0 0 rgba(0,0,0,0.08),
+      inset -4px 0 0 rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  /* 瓦楞纸纹理 */
+  .box-body::before {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0 12px,
+      rgba(0,0,0,0.05) 12px 14px,
+      transparent 14px 26px,
+      rgba(255,255,255,0.04) 26px 28px
+    );
+    pointer-events: none;
+  }
+  /* 快递面单 */
+  .shipping-label {
+    position: absolute;
+    top: 14%; right: 10%;
+    width: 44%; height: 36%;
+    background: #fafafa;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    padding: 6px;
+    display: flex; flex-direction: column;
+    font-family: "Courier New", monospace;
+    transform: rotate(-2deg);
+    z-index: 2;
+  }
+  .label-header {
+    height: 14px;
+    background: linear-gradient(90deg, #e63946 0%, #d62828 100%);
+    margin: -6px -6px 4px -6px;
+    border-radius: 3px 3px 0 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 9px; font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .label-line {
+    height: 3px; background: #333; margin-bottom: 3px; border-radius: 1px;
+  }
+  .label-line.short { width: 60%; }
+  .label-line.medium { width: 80%; }
+  .barcode {
+    margin-top: auto;
+    height: 22px;
+    background: repeating-linear-gradient(
+      90deg,
+      #000 0 1.5px, transparent 1.5px 3px,
+      #000 3px 4.5px, transparent 4.5px 7px,
+      #000 7px 9px, transparent 9px 11px,
+      #000 11px 13px, transparent 13px 16px
+    );
+  }
+  .stamp {
+    position: absolute;
+    top: -6px; right: -8px;
+    width: 36px; height: 36px;
+    border: 2.5px solid #d62828;
+    border-radius: 50%;
+    color: #d62828;
+    font-size: 8px;
+    font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(15deg);
+    background: rgba(255,255,255,0.6);
+    text-align: center;
+    line-height: 1;
+    opacity: 0.85;
+  }
+  .fragile-mark {
+    position: absolute;
+    top: 14%; left: 8%;
+    width: 60px; height: 70px;
+    z-index: 2;
+  }
+  .box-flap-left, .box-flap-right {
+    position: absolute; top: 0; width: 50%; height: 50%;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 12px, rgba(0,0,0,0.05) 12px 14px),
+      linear-gradient(180deg, #c79665 0%, #a07849 100%);
+    transition: transform 0.6s cubic-bezier(.5,1.6,.4,1);
+    transform-origin: top;
+    z-index: 4;
+  }
+  .box-flap-left { left: 0; border-radius: 8px 0 0 0; box-shadow: inset -2px 0 0 rgba(0,0,0,0.1); }
+  .box-flap-right { right: 0; border-radius: 0 8px 0 0; box-shadow: inset 2px 0 0 rgba(0,0,0,0.1); }
+  .box-open .box-flap-left { transform: rotateX(-160deg); }
+  .box-open .box-flap-right { transform: rotateX(-160deg); }
+
+  .tape {
+    position: absolute; top: 50%; left: -10px; right: -10px;
+    height: 38px; transform: translateY(-50%);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 30%, rgba(0,0,0,0.1) 100%),
+      repeating-linear-gradient(90deg, #f4d35e 0 20px, #e6c14b 20px 40px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5);
+    z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Courier New", monospace;
+    font-size: 11px; font-weight: bold;
+    color: #b8860b;
+    letter-spacing: 6px;
+  }
+  .tape::before, .tape::after {
+    content: "FRAGILE ★ FRAGILE ★ FRAGILE ★ FRAGILE";
+    white-space: nowrap;
+  }
+  .tape.cut {
+    animation: tape-split 0.5s forwards;
+  }
+  @keyframes tape-split {
+    to { clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); opacity: 0.6; }
+  }
+  .tape-right-half {
+    position: absolute; top: 50%; left: 50%; right: -10px;
+    height: 38px; transform: translateY(-50%);
+    background: repeating-linear-gradient(90deg, #f4d35e 0 20px, #e6c14b 20px 40px);
+    z-index: 5;
+    opacity: 0;
+  }
+  .tape.cut + .tape-right-half {
+    opacity: 0.7;
+    animation: tape-fall 0.5s 0.3s forwards;
+  }
+  @keyframes tape-fall {
+    to { transform: translateY(80px) rotate(15deg); opacity: 0; }
+  }
+
+  .cutter {
+    position: absolute;
+    font-size: 50px;
+    pointer-events: none;
+    z-index: 6;
+    transition: left 0.6s ease-out;
+    top: 50%; left: -60px; transform: translateY(-90%);
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+  }
+  .cutter.cutting { left: calc(100% + 20px); }
+
+  /* 真实气泡膜 ✨ */
+  .bubble-wrap {
+    position: absolute; inset: 4px;
+    border-radius: 8px;
+    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 1fr);
+    gap: 1px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(220,240,255,0.25) 50%, rgba(255,255,255,0.3) 100%);
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow:
+      inset 0 0 30px rgba(255,255,255,0.4),
+      0 0 0 2px rgba(0,0,0,0.05);
+    z-index: 7;
+    overflow: hidden;
+  }
+  /* 透明塑料表面光泽 */
+  .bubble-wrap::before {
+    content: ""; position: absolute;
+    top: 0; left: -50%; width: 60%; height: 100%;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+    pointer-events: none;
+    transform: skewX(-20deg);
+  }
+  .bubble {
+    position: relative;
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse 30% 25% at 32% 28%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.55) 30%, transparent 60%),
+      radial-gradient(circle at 50% 50%, rgba(225,240,255,0.45) 0%, rgba(195,220,245,0.4) 60%, rgba(160,195,225,0.55) 100%);
+    box-shadow:
+      inset -1px -2px 3px rgba(70,130,180,0.35),
+      inset 1px 1px 2px rgba(255,255,255,0.7),
+      0 1px 1px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.08s;
+  }
+  .bubble::after {
+    content: ""; position: absolute;
+    top: 60%; right: 18%; width: 22%; height: 14%;
+    background: rgba(255,255,255,0.5);
+    border-radius: 50%;
+    filter: blur(0.5px);
+  }
+  .bubble:active { transform: scale(0.85); }
+  .bubble.popped {
+    background:
+      radial-gradient(circle at 50% 50%, rgba(180,200,220,0.15) 0%, rgba(150,180,200,0.25) 100%);
+    box-shadow: inset 0 1px 2px rgba(100,130,160,0.2);
+    transform: scale(0.7);
+    opacity: 0.5;
+    animation: bubble-pop 0.2s ease-out;
+  }
+  .bubble.popped::after { display: none; }
+  @keyframes bubble-pop {
+    0% { transform: scale(1.1); }
+    50% { transform: scale(0.5); }
+    100% { transform: scale(0.7); }
+  }
+
+  /* 玩具揭晓 */
+  .reveal-scene {
+    background: radial-gradient(circle at center, #fff8d6 0%, #ffd9a0 70%, #ff9f7a 100%);
+  }
+  .reveal-bg-rays {
+    position: absolute; inset: 0;
+    background: conic-gradient(
+      from 0deg,
+      rgba(255,255,255,0.4) 0deg, transparent 15deg,
+      rgba(255,255,255,0.4) 30deg, transparent 45deg,
+      rgba(255,255,255,0.4) 60deg, transparent 75deg,
+      rgba(255,255,255,0.4) 90deg, transparent 105deg,
+      rgba(255,255,255,0.4) 120deg, transparent 135deg,
+      rgba(255,255,255,0.4) 150deg, transparent 165deg,
+      rgba(255,255,255,0.4) 180deg, transparent 195deg,
+      rgba(255,255,255,0.4) 210deg, transparent 225deg,
+      rgba(255,255,255,0.4) 240deg, transparent 255deg,
+      rgba(255,255,255,0.4) 270deg, transparent 285deg,
+      rgba(255,255,255,0.4) 300deg, transparent 315deg,
+      rgba(255,255,255,0.4) 330deg, transparent 345deg
+    );
+    animation: rays-spin 8s linear infinite;
+  }
+  @keyframes rays-spin { to { transform: rotate(360deg); } }
+  .toy-reveal {
+    width: clamp(200px, 50vmin, 380px); height: clamp(200px, 50vmin, 380px);
+    animation: toy-pop 1.2s cubic-bezier(.5,1.8,.4,1) forwards;
+    filter: drop-shadow(0 12px 20px rgba(0,0,0,0.3));
+    z-index: 5;
+  }
+  .toy-reveal svg { width: 100%; height: 100%; }
+  .toy-reveal.legendary {
+    animation: toy-pop 1.2s cubic-bezier(.5,1.8,.4,1) forwards, legendary-shine 1.5s ease-in-out infinite 1.2s;
+  }
+  @keyframes toy-pop {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    60% { transform: scale(1.3) rotate(20deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes legendary-shine {
+    0%, 100% { filter: drop-shadow(0 0 30px gold) drop-shadow(0 12px 20px rgba(0,0,0,0.3)); }
+    50% { filter: drop-shadow(0 0 60px gold) drop-shadow(0 0 80px #ffeb3b) drop-shadow(0 12px 20px rgba(0,0,0,0.3)); }
+  }
+  .toy-name {
+    margin-top: clamp(16px, 3vmin, 32px);
+    font-size: clamp(22px, 5vmin, 42px); font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 #ff6b9d, 6px 6px 0 rgba(0,0,0,0.2);
+    z-index: 5;
+    animation: name-bounce 0.6s ease-out 0.8s backwards;
+  }
+  .rarity-badge {
+    margin-top: clamp(8px, 1.5vmin, 14px);
+    padding: clamp(6px, 1.2vmin, 10px) clamp(18px, 4vmin, 30px);
+    border-radius: 999px;
+    font-size: clamp(15px, 3vmin, 24px); font-weight: bold;
+    color: #fff;
+    z-index: 5;
+    animation: name-bounce 0.6s ease-out 1.0s backwards;
+  }
+  @keyframes name-bounce {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .rarity-common { background: linear-gradient(90deg, #95a5a6, #7f8c8d); }
+  .rarity-rare { background: linear-gradient(90deg, #3498db, #2980b9); }
+  .rarity-epic { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
+  .rarity-legendary { background: linear-gradient(90deg, #f39c12, #f1c40f, #f39c12);
+    background-size: 200% 100%; animation: gold-shimmer 2s linear infinite; }
+  @keyframes gold-shimmer { to { background-position: 200% 0; } }
+
+  .big-btn {
+    margin-top: clamp(18px, 3vmin, 36px);
+    padding: clamp(12px, 2.5vmin, 22px) clamp(28px, 6.5vmin, 56px);
+    font-size: clamp(20px, 4.5vmin, 32px); font-weight: bold;
+    color: #fff;
+    background: linear-gradient(180deg, #ff6b9d 0%, #ff4081 100%);
+    border: 4px solid #fff;
+    border-radius: 999px;
+    box-shadow: 0 8px 0 #c2185b, 0 12px 20px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 6;
+    transition: transform 0.1s;
+  }
+  .big-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 4px 0 #c2185b, 0 6px 12px rgba(0,0,0,0.2);
+  }
+  .big-btn.green {
+    background: linear-gradient(180deg, #4ecdc4 0%, #2ec4b6 100%);
+    box-shadow: 0 8px 0 #1a8e85, 0 12px 20px rgba(0,0,0,0.2);
+  }
+  .big-btn.green:active {
+    box-shadow: 0 4px 0 #1a8e85, 0 6px 12px rgba(0,0,0,0.2);
+  }
+
+  /* 收藏图鉴 */
+  .collection-modal {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .collection-modal.hidden { display: none; }
+  .collection-content {
+    width: min(92%, 700px); max-height: 88vh;
+    background: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
+    border-radius: 24px;
+    border: 6px solid #ff6b9d;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    padding: 20px;
+    display: flex; flex-direction: column;
+  }
+  .collection-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .collection-title {
+    font-size: clamp(20px, 4.5vmin, 36px); font-weight: bold; color: #ff3366;
+    text-shadow: 2px 2px 0 #ffd6e0;
+  }
+  .close-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%; border: 3px solid #fff;
+    background: #ff6b9d; color: #fff;
+    font-size: 24px; font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #c2185b;
+  }
+  .close-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #c2185b; }
+  .progress-text { font-size: 18px; color: #666; margin-bottom: 12px; }
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    overflow-y: auto;
+    padding: 8px;
+    flex: 1;
+  }
+  .collection-cell {
+    aspect-ratio: 1;
+    background: #f0f0f0;
+    border: 3px solid #ddd;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .collection-cell svg { width: 85%; height: 85%; }
+  .collection-cell.unlocked.common { background: #ecf0f1; border-color: #95a5a6; }
+  .collection-cell.unlocked.rare { background: #d6eaf8; border-color: #3498db; }
+  .collection-cell.unlocked.epic { background: #e8daef; border-color: #9b59b6; }
+  .collection-cell.unlocked.legendary {
+    background: linear-gradient(135deg, #fff8d6, #ffd700);
+    border-color: #f39c12;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  }
+  .collection-cell.locked::before {
+    content: "?"; color: #999; font-size: 32px; font-weight: bold;
+  }
+  .count-badge {
+    position: absolute; bottom: 2px; right: 4px;
+    font-size: 14px; color: #555;
+    background: rgba(255,255,255,0.85);
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-weight: bold;
+  }
+
+  .confetti {
+    position: absolute;
+    width: 12px; height: 12px;
+    pointer-events: none;
+    animation: confetti-fall 2s linear forwards;
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+  }
+
+  .price-tag {
+    margin-top: 14px;
+    font-size: 24px;
+    color: #d35400;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #fff;
+  }
+
+  .shop-row {
+    display: flex; gap: clamp(8px, 2vmin, 18px); margin-top: 24px;
+    flex-wrap: wrap; justify-content: center;
+    padding: 0 8px;
+  }
+  .shop-card {
+    background: rgba(255,255,255,0.95);
+    border: 4px solid #ff6b9d;
+    border-radius: 20px;
+    padding: clamp(8px, 1.6vmin, 16px) clamp(8px, 1.4vmin, 14px);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s;
+    width: clamp(96px, 22vmin, 150px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+  }
+  .shop-card:active { transform: scale(0.95); }
+  .shop-card.locked { opacity: 0.6; cursor: not-allowed; border-color: #aaa; }
+  .shop-card .pkg-icon { width: clamp(56px, 12vmin, 96px); height: clamp(56px, 12vmin, 96px); margin: 0 auto; }
+  .shop-card .pkg-icon svg { width: 100%; height: 100%; }
+  .shop-card .label { font-size: clamp(13px, 2.5vmin, 20px); font-weight: bold; margin-top: 6px; color: #333; }
+  .shop-card .cost { font-size: clamp(13px, 2.5vmin, 20px); color: #d35400; font-weight: bold; margin-top: 4px; }
+
+  .scene-title {
+    position: absolute; top: clamp(54px, 10vmin, 100px); left: 50%; transform: translateX(-50%);
+    font-size: clamp(20px, 4.5vmin, 36px); font-weight: bold;
+    color: #fff;
+    text-shadow: 3px 3px 0 #ff6b9d, 4px 4px 0 rgba(0,0,0,0.2);
+    z-index: 5;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .float-text {
+    position: absolute;
+    font-size: 32px; font-weight: bold;
+    color: #ffd700;
+    text-shadow: 2px 2px 0 #d35400;
+    pointer-events: none;
+    animation: float-up 1.2s ease-out forwards;
+    z-index: 50;
+  }
+  @keyframes float-up {
+    0% { transform: translateY(0) scale(0.5); opacity: 0; }
+    20% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+    100% { transform: translateY(-100px) scale(1); opacity: 0; }
+  }
+
+  .tap-hint {
+    position: absolute; bottom: 12%;
+    left: 50%; transform: translateX(-50%);
+    font-size: clamp(16px, 3.6vmin, 26px); font-weight: bold;
+    color: #fff;
+    text-shadow: 2px 2px 0 #ff6b9d;
+    animation: tap-hint-pulse 1s ease-in-out infinite;
+    pointer-events: none;
+    text-align: center;
+    z-index: 8;
+    white-space: nowrap;
+  }
+  @keyframes tap-hint-pulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.1); }
+  }
+
+  .legendary-glow {
+    position: absolute;
+    width: clamp(260px, 65vmin, 480px); height: clamp(260px, 65vmin, 480px);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, transparent 70%);
+    animation: glow-pulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes glow-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.3); opacity: 1; }
+  }
+
+  /* 横屏适配：设备短边时压缩房子和地面比例，避免门口场景太挤 */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .house { height: 60%; bottom: 25%; }
+    .ground { height: 25%; }
+    .door { height: clamp(80px, 30vh, 130px); width: clamp(60px, 18vh, 100px); }
+    .house-window { width: clamp(40px, 14vh, 80px); height: clamp(40px, 14vh, 80px); top: 12px; }
+    .table { height: 22%; }
+    .package-big { width: clamp(180px, 55vmin, 320px); height: clamp(180px, 55vmin, 320px); margin-top: 0; }
+    .scene-title { top: clamp(40px, 6vh, 70px); }
+    .map-progress { bottom: 6px; }
+    .tracking-card { top: clamp(40px, 6vh, 60px); }
+    .tracking-log { max-height: clamp(40px, 8vh, 70px); }
+    .toy-name { margin-top: 8px; }
+    .big-btn { margin-top: clamp(8px, 1vh, 16px); }
+  }
+
+  /* 极小屏（旧手机）补充：进度条字号最小化，文字不换行 */
+  @media (max-width: 360px) {
+    .map-progress-dot { width: 24px; height: 24px; font-size: 12px; }
+    .scene-title { font-size: 18px; }
+    .tracking-current { font-size: 14px; }
+    .tracking-header { font-size: 10px; }
+    .shop-card { width: 92px; }
+    .shop-card .pkg-icon { width: 56px; height: 56px; }
+  }
+
+  /* ============ 电梯场景 ============ */
+  .elevator-scene {
+    background: #2a2a2a;
+    overflow: hidden;
+  }
+  .elev-interior {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, #b8b8b0 0%, #8a8a82 60%, #4a4a44 100%);
+    /* 墙面纹理：垂直金属拉丝 */
+    background-image:
+      repeating-linear-gradient(90deg,
+        transparent 0 18px,
+        rgba(0,0,0,0.08) 18px 19px),
+      linear-gradient(180deg, #b8b8b0 0%, #8a8a82 60%, #4a4a44 100%);
+    z-index: 0;
+  }
+  .elev-interior::before {
+    /* 顶部装饰条 */
+    content: ""; position: absolute;
+    top: 0; left: 0; right: 0; height: 8%;
+    background: linear-gradient(180deg, #d4b483 0%, #8a7858 100%);
+    border-bottom: 3px solid #5a4838;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .elev-interior::after {
+    /* 地板 */
+    content: ""; position: absolute;
+    bottom: 0; left: 0; right: 0; height: 12%;
+    background:
+      repeating-linear-gradient(90deg,
+        #5a4838 0 60px, #4a3828 60px 62px),
+      #5a4838;
+    border-top: 3px solid #3a2818;
+    box-shadow: 0 -4px 8px rgba(0,0,0,0.3) inset;
+  }
+  .elev-mirror {
+    position: absolute;
+    top: 16%; left: 18%; right: 18%; bottom: 30%;
+    background: linear-gradient(135deg,
+      rgba(220,230,240,0.55) 0%,
+      rgba(180,200,220,0.4) 40%,
+      rgba(160,180,200,0.3) 100%);
+    border: clamp(3px, 0.8vmin, 6px) solid #8a7858;
+    border-radius: 4px;
+    box-shadow:
+      0 0 0 2px #5a4838,
+      inset 0 0 30px rgba(255,255,255,0.4);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .elev-mirror::before {
+    /* 镜面反光 */
+    content: ""; position: absolute;
+    top: 5%; left: 5%; width: 30%; height: 35%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 100%);
+    transform: skewY(-5deg);
+  }
+  .elev-handrail {
+    position: absolute;
+    bottom: 32%; left: 12%; right: 12%;
+    height: 6px;
+    background: linear-gradient(180deg, #d4d4cc 0%, #a8a8a0 100%);
+    border-radius: 3px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    z-index: 2;
+  }
+  .elev-handrail::before, .elev-handrail::after {
+    content: ""; position: absolute;
+    width: 4px; height: 22px;
+    background: #888;
+    top: 6px;
+  }
+  .elev-handrail::before { left: 0; }
+  .elev-handrail::after { right: 0; }
+  .elev-light {
+    position: absolute;
+    top: 4%; left: 50%; transform: translateX(-50%);
+    width: 30%; height: 14px;
+    background: radial-gradient(ellipse, #fff8b0 0%, #ffd60a 60%, transparent 100%);
+    border-radius: 50%;
+    z-index: 1;
+    filter: blur(2px);
+  }
+
+  /* 楼层显示屏 */
+  .elev-display-frame {
+    position: absolute;
+    top: clamp(54px, 9vmin, 90px);
+    left: 50%; transform: translateX(-50%);
+    background: linear-gradient(180deg, #5a4838 0%, #3a2818 100%);
+    border: 3px solid #2a1808;
+    border-radius: 10px;
+    padding: clamp(6px, 1.4vmin, 12px) clamp(14px, 3vmin, 24px);
+    z-index: 8;
+    box-shadow:
+      0 6px 12px rgba(0,0,0,0.4),
+      inset 0 2px 4px rgba(255,255,255,0.15);
+  }
+  .elev-display {
+    background: #0a0a0a;
+    border: 2px solid #000;
+    border-radius: 4px;
+    padding: clamp(4px, 1vmin, 8px) clamp(12px, 2.5vmin, 20px);
+    display: flex; align-items: center; gap: clamp(6px, 1.2vmin, 12px);
+    font-family: "Courier New", "Menlo", monospace;
+    font-size: clamp(28px, 7vmin, 52px);
+    font-weight: bold;
+    color: #ff3838;
+    text-shadow: 0 0 10px #ff3838, 0 0 20px rgba(255,56,56,0.6);
+    box-shadow: inset 0 0 16px rgba(255,56,56,0.15);
+  }
+  .elev-arrow {
+    color: #2ec4b6;
+    text-shadow: 0 0 8px #2ec4b6;
+    font-size: 0.6em;
+    animation: arrow-blink 0.8s ease-in-out infinite;
+  }
+  .elev-arrow.idle { animation: none; opacity: 0.3; }
+  @keyframes arrow-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .elev-suffix { color: #ffd60a; text-shadow: 0 0 8px #ffd60a; font-size: 0.7em; }
+
+  /* 电梯门 */
+  .elev-doors {
+    position: absolute;
+    top: 8%; left: 6%; right: 6%; bottom: 12%;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .elev-door {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 50%;
+    background:
+      repeating-linear-gradient(180deg,
+        transparent 0 32px,
+        rgba(0,0,0,0.06) 32px 34px),
+      linear-gradient(180deg, #d8d8d2 0%, #aaaaa2 70%, #888880 100%);
+    border: 3px solid #555;
+    box-shadow:
+      inset 0 0 30px rgba(0,0,0,0.2);
+    transition: transform 1.4s cubic-bezier(0.7, 0, 0.3, 1);
+  }
+  .elev-door-left { left: 0; border-right: 1.5px solid #444; }
+  .elev-door-right { right: 0; border-left: 1.5px solid #444; }
+  .elev-door::after {
+    /* 门把手 */
+    content: ""; position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 8px; height: clamp(36px, 8vmin, 60px);
+    background: linear-gradient(180deg, #ffd60a 0%, #b8860b 100%);
+    border: 1px solid #5a4030;
+    border-radius: 4px;
+  }
+  .elev-door-left::after { right: 12px; }
+  .elev-door-right::after { left: 12px; }
+  .elev-doors.open .elev-door-left { transform: translateX(-105%); }
+  .elev-doors.open .elev-door-right { transform: translateX(105%); }
+
+  /* 走廊（电梯门后） */
+  .hallway-bg {
+    position: absolute;
+    top: 8%; left: 6%; right: 6%; bottom: 12%;
+    z-index: 4;
+    overflow: hidden;
+    background: linear-gradient(180deg, #fff5e1 0%, #f4d9a4 60%, #d4a373 100%);
+  }
+  .hallway-floor {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 30%;
+    background:
+      repeating-linear-gradient(90deg,
+        #8b5a2b 0 80px, #6b3410 80px 82px),
+      #8b5a2b;
+    box-shadow: 0 -8px 20px rgba(0,0,0,0.3) inset;
+  }
+  .hallway-walls {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, transparent 0 60%, rgba(0,0,0,0.15) 100%);
+  }
+  .hallway-walls::before {
+    /* 顶灯 */
+    content: ""; position: absolute;
+    top: 4px; left: 50%; transform: translateX(-50%);
+    width: 18%; height: 12px;
+    background: radial-gradient(ellipse, #fff8b0 0%, #ffd60a 60%, transparent 100%);
+    border-radius: 50%;
+    filter: blur(1px);
+  }
+  .hallway-doors {
+    position: absolute;
+    top: 18%; left: 5%; right: 5%; bottom: 32%;
+    display: flex; justify-content: space-around; align-items: stretch;
+    gap: clamp(6px, 1.5vmin, 14px);
+  }
+  .apt-door {
+    flex: 1;
+    background: linear-gradient(180deg, #a06030 0%, #6b3410 100%);
+    border: 4px solid #3a1d05;
+    border-radius: 6px 6px 0 0;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    min-width: 0;
+  }
+  .apt-door:active { transform: translateY(2px) scale(0.97); }
+  .apt-door.selected {
+    box-shadow: 0 0 0 4px #ffd60a, 0 0 30px #ffd60a, 0 6px 14px rgba(0,0,0,0.3);
+    animation: door-glow 0.6s ease-in-out;
+  }
+  @keyframes door-glow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .apt-door-num {
+    position: absolute;
+    top: clamp(8px, 2vmin, 16px); left: 50%; transform: translateX(-50%);
+    background: #fff;
+    border: 2px solid #1d3557;
+    border-radius: 4px;
+    padding: clamp(2px, 0.6vmin, 6px) clamp(6px, 1.4vmin, 12px);
+    font-size: clamp(14px, 3vmin, 24px);
+    font-weight: bold;
+    color: #1d3557;
+    font-family: "Courier New", monospace;
+  }
+  .apt-door-knob {
+    position: absolute;
+    top: 60%; right: clamp(6px, 1.5vmin, 12px);
+    width: clamp(8px, 2vmin, 14px); height: clamp(8px, 2vmin, 14px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffd60a 0%, #b8860b 100%);
+    border: 1px solid #7a5410;
+  }
+
+  /* 选择面板 */
+  .elev-panel {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: linear-gradient(180deg, #f8f8f4 0%, #e0e0d8 100%);
+    border: 4px solid #5a4838;
+    border-radius: 14px;
+    padding: clamp(12px, 2.4vmin, 20px) clamp(14px, 3vmin, 24px);
+    z-index: 9;
+    box-shadow:
+      0 12px 24px rgba(0,0,0,0.4),
+      inset 0 2px 4px rgba(255,255,255,0.6);
+    transition: opacity 0.3s, transform 0.3s;
+    /* 33 楼按钮一屏可能放不下：限制最高，超出可滚动 */
+    max-height: 78vh;
+    max-width: 92vw;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .elev-panel::-webkit-scrollbar { width: 6px; }
+  .elev-panel::-webkit-scrollbar-track { background: #d8d8d0; border-radius: 3px; }
+  .elev-panel::-webkit-scrollbar-thumb { background: #8a7858; border-radius: 3px; }
+  .elev-panel.hiding {
+    opacity: 0; transform: translate(-50%, -50%) scale(0.85);
+    pointer-events: none;
+  }
+  .elev-panel-title {
+    text-align: center;
+    font-size: clamp(16px, 3.6vmin, 26px);
+    font-weight: bold;
+    color: #1d3557;
+    margin-bottom: clamp(10px, 2vmin, 18px);
+    white-space: nowrap;
+  }
+  .elev-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(8px, 1.6vmin, 14px);
+  }
+  /* 33 楼按钮：4 列网格，按钮更小 */
+  .elev-buttons-floors {
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(6px, 1.2vmin, 12px);
+  }
+  .elev-buttons.rooms-2 { grid-template-columns: repeat(2, 1fr); }
+  .elev-btn-small {
+    width: clamp(42px, 9vmin, 64px) !important;
+    height: clamp(42px, 9vmin, 64px) !important;
+    font-size: clamp(15px, 3.2vmin, 24px) !important;
+    box-shadow: 0 4px 0 #6a584a, 0 6px 10px rgba(0,0,0,0.22), inset 0 2px 3px rgba(255,255,255,0.7) !important;
+  }
+  .elev-btn-small:active, .elev-btn-small.pressed {
+    box-shadow: 0 0 22px #ff4444, 0 1px 0 #6a584a, inset 0 0 8px rgba(255,255,255,0.5) !important;
+  }
+  .elev-btn {
+    width: clamp(50px, 11vmin, 80px);
+    height: clamp(50px, 11vmin, 80px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fdfdfa 0%, #d8d8d0 60%, #b0b0a8 100%);
+    border: 3px solid #5a4838;
+    font-size: clamp(20px, 4.5vmin, 32px);
+    font-weight: bold;
+    font-family: "Courier New", monospace;
+    color: #1d3557;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow:
+      0 5px 0 #6a584a,
+      0 8px 14px rgba(0,0,0,0.25),
+      inset 0 2px 3px rgba(255,255,255,0.7);
+  }
+  .elev-btn:active, .elev-btn.pressed {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #6a584a, 0 3px 6px rgba(0,0,0,0.2);
+    background: radial-gradient(circle at 30% 30%, #ff6868 0%, #cc2828 80%);
+    color: #fff;
+    text-shadow: 0 0 6px #fff8;
+  }
+  .elev-btn.pressed {
+    box-shadow:
+      0 0 24px #ff4444,
+      0 2px 0 #6a584a,
+      inset 0 0 8px rgba(255,255,255,0.5);
+    animation: btn-pulse 0.6s ease-in-out;
+  }
+  @keyframes btn-pulse {
+    0%, 100% { transform: translateY(3px); }
+    50% { transform: translateY(3px) scale(1.08); }
+  }
+
+  /* 电梯抖动 */
+  .elev-doors.shaking, .elev-display-frame.shaking, .elev-mirror.shaking {
+    animation: elev-shake 0.4s ease-in-out infinite;
+  }
+  @keyframes elev-shake {
+    0%, 100% { transform: translateX(-50%); }
+    25% { transform: translateX(calc(-50% - 1px)) translateY(0.5px); }
+    75% { transform: translateX(calc(-50% + 1px)) translateY(-0.5px); }
+  }
+  .elev-doors.shaking { animation: elev-shake-doors 0.4s ease-in-out infinite; }
+  .elev-mirror.shaking { animation: elev-shake-mirror 0.4s ease-in-out infinite; }
+  @keyframes elev-shake-doors {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(0.8px); }
+    75% { transform: translateY(-0.8px); }
+  }
+  @keyframes elev-shake-mirror {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(0.5px); }
+    75% { transform: translateY(-0.5px); }
+  }
+
+  .delivery-msg {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: clamp(12px, 2.5vmin, 20px) clamp(20px, 4vmin, 36px);
+    border-radius: 999px;
+    border: 3px solid #ffd60a;
+    font-size: clamp(18px, 3.8vmin, 28px);
+    font-weight: bold;
+    z-index: 20;
+    box-shadow: 0 0 30px #ffd60a, 0 8px 16px rgba(0,0,0,0.4);
+    white-space: nowrap;
+    animation: msg-pop 0.4s ease-out;
+  }
+  .delivery-msg.hidden { display: none; }
+  @keyframes msg-pop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+
+  /* ============ 物流地图场景（俯视 SVG 图） ============ */
+  .map-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    /* meet 模式下留白用海色填充，整张图能看见 */
+    background: linear-gradient(180deg, #a8dadc 0%, #7ab8c8 100%);
+  }
+  .map-svg .waypoint { transition: transform 0.3s; }
+  .map-svg .waypoint circle { transition: fill 0.4s, stroke 0.4s; }
+
+  /* ============ 物流地图场景 ============ */
+  .map-scene { background: #87ceeb; overflow: hidden; }
+  .map-bg-layer {
+    position: absolute; inset: 0;
+    transition: opacity 0.5s, background 0.6s;
+  }
+  .map-bg-warehouse {
+    background: linear-gradient(180deg, #cfd8dc 0%, #b0bec5 60%, #78909c 100%);
+  }
+  .map-bg-countryside {
+    background: linear-gradient(180deg, #87ceeb 0%, #b8e2a3 60%, #6a994e 100%);
+  }
+  .map-bg-sky {
+    background: linear-gradient(180deg, #4a90e2 0%, #87ceeb 50%, #c5e3f0 100%);
+  }
+  .map-bg-city {
+    background: linear-gradient(180deg, #ffb88c 0%, #ff8a65 50%, #b0bec5 100%);
+  }
+  .map-bg-suburb {
+    background: linear-gradient(180deg, #ffcdb2 0%, #ffb4a2 60%, #b5e48c 100%);
+  }
+  .map-bg-neighborhood {
+    background: linear-gradient(180deg, #ffd6a5 0%, #ffadad 60%, #d4a373 100%);
+  }
+  .map-bg-home {
+    background: linear-gradient(180deg, #87ceeb 0%, #ffd6e0 60%, #ffe8a3 100%);
+  }
+
+  /* 背景装饰元素 */
+  .map-decor {
+    position: absolute; pointer-events: none;
+  }
+  .cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 100px;
+    animation: cloud-drift 10s linear infinite;
+  }
+  .cloud::before, .cloud::after {
+    content: ""; position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+  }
+  .cloud-1 { width: 80px; height: 24px; top: 12%; left: 10%; }
+  .cloud-1::before { width: 36px; height: 36px; top: -16px; left: 12px; }
+  .cloud-1::after { width: 28px; height: 28px; top: -10px; left: 42px; }
+  .cloud-2 { width: 100px; height: 28px; top: 20%; right: 15%; animation-duration: 14s; animation-delay: -3s; }
+  .cloud-2::before { width: 40px; height: 40px; top: -18px; left: 16px; }
+  .cloud-2::after { width: 32px; height: 32px; top: -12px; left: 52px; }
+  .cloud-3 { width: 70px; height: 22px; top: 30%; left: 50%; animation-duration: 12s; animation-delay: -6s; }
+  .cloud-3::before { width: 30px; height: 30px; top: -14px; left: 10px; }
+  .cloud-3::after { width: 24px; height: 24px; top: -8px; left: 36px; }
+  @keyframes cloud-drift {
+    from { transform: translateX(-30vw); }
+    to { transform: translateX(30vw); }
+  }
+
+  /* 山脉 / 城市 / 树等远景 */
+  .mountain {
+    position: absolute;
+    bottom: 30%;
+    width: 0; height: 0;
+    border-left: 80px solid transparent;
+    border-right: 80px solid transparent;
+    border-bottom: 110px solid #6c757d;
+  }
+  .mountain::after {
+    content: ""; position: absolute;
+    top: -10px; left: -25px;
+    border-left: 25px solid transparent;
+    border-right: 25px solid transparent;
+    border-bottom: 30px solid #fff;
+  }
+  .mountain-1 { left: 5%; }
+  .mountain-2 { left: 30%; transform: scale(1.3); }
+  .mountain-3 { right: 5%; transform: scale(0.9); }
+
+  .building-skyline {
+    position: absolute; left: 0; right: 0; bottom: 30%;
+    height: 35%;
+    pointer-events: none;
+    background:
+      linear-gradient(to right,
+        #455a64 0% 8%, transparent 8% 10%,
+        #37474f 10% 16%, transparent 16% 18%,
+        #546e7a 18% 28%, transparent 28% 30%,
+        #455a64 30% 40%, transparent 40% 42%,
+        #37474f 42% 52%, transparent 52% 54%,
+        #546e7a 54% 64%, transparent 64% 66%,
+        #455a64 66% 74%, transparent 74% 76%,
+        #37474f 76% 86%, transparent 86% 88%,
+        #546e7a 88% 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, transparent 30%, #000 30%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, transparent 30%, #000 30%);
+  }
+  .building-skyline::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 5% 60%, #ffd60a 0 1px, transparent 2px) 0 0/40px 40px,
+      radial-gradient(circle at 12% 80%, #ffd60a 0 1px, transparent 2px) 0 0/35px 30px;
+  }
+
+  .ground-track {
+    position: absolute; left: 0; right: 0; bottom: 24%;
+    height: 6px;
+    background: #1d3557;
+    box-shadow: 0 6px 0 #2a9d8f, 0 -6px 0 #2a9d8f;
+  }
+  .ground-track::before {
+    content: ""; position: absolute; left: 0; right: 0;
+    top: 50%; height: 2px;
+    background: repeating-linear-gradient(90deg, #fff 0 16px, transparent 16px 28px);
+    transform: translateY(-50%);
+  }
+
+  .ground-road {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+  }
+  .ground-road::before {
+    content: ""; position: absolute; left: 0; right: 0;
+    top: 30%; height: 4px;
+    background: repeating-linear-gradient(90deg, #ffd60a 0 30px, transparent 30px 50px);
+  }
+
+  .grass-field {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background: linear-gradient(180deg, #95d5b2 0%, #52b788 100%);
+  }
+
+  .home-target {
+    position: absolute;
+    right: 10%; bottom: 28%;
+    width: clamp(80px, 18vmin, 160px); height: clamp(80px, 18vmin, 160px);
+    z-index: 3;
+  }
+  .home-target svg { width: 100%; height: 100%; }
+
+  /* 移动的运输工具 */
+  .map-vehicle {
+    position: absolute;
+    bottom: 18%;
+    left: -300px;
+    width: clamp(200px, 50vmin, 400px); height: auto;
+    aspect-ratio: 280 / 160;
+    z-index: 5;
+  }
+  .map-vehicle svg { width: 100%; height: 100%; }
+  .map-vehicle.flying { bottom: 45%; }
+  .map-vehicle.crossing { animation: vehicle-cross 2s linear forwards; }
+  @keyframes vehicle-cross {
+    from { left: -260px; }
+    to { left: calc(100vw + 60px); }
+  }
+  .map-vehicle.arriving { animation: vehicle-arrive 2s ease-out forwards; }
+  @keyframes vehicle-arrive {
+    from { left: -260px; }
+    to { left: calc(60vw); }
+  }
+
+  /* 物流追踪卡（替代旧 stage-title） */
+  .tracking-card {
+    position: absolute;
+    top: clamp(56px, 9.5vmin, 100px);
+    left: 50%; transform: translateX(-50%);
+    width: min(94vw, 480px);
+    background: rgba(255,255,255,0.96);
+    border-radius: 16px;
+    padding: clamp(8px, 1.6vmin, 14px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    border: 3px solid #fff;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+  }
+  .tracking-header {
+    font-family: "Courier New", monospace;
+    font-size: clamp(11px, 2.2vmin, 14px);
+    color: #555;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    display: flex; flex-wrap: wrap; gap: 4px 10px;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .tracking-header .tag {
+    background: #ff6b9d; color: #fff;
+    padding: 1px 6px; border-radius: 4px;
+    font-size: clamp(10px, 2vmin, 12px);
+    font-weight: bold;
+  }
+  .tracking-route { font-weight: bold; color: #1d3557; }
+  .tracking-current {
+    font-size: clamp(13px, 3vmin, 20px);
+    font-weight: bold;
+    color: #1d3557;
+    margin: 4px 0 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    animation: tracking-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes tracking-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+  }
+  .tracking-log {
+    max-height: clamp(70px, 16vmin, 120px);
+    overflow-y: auto;
+    font-size: clamp(11px, 2.2vmin, 14px);
+    color: #555;
+    font-family: "Courier New", monospace;
+    scroll-behavior: smooth;
+    padding-right: 4px;
+  }
+  .tracking-log::-webkit-scrollbar { width: 4px; }
+  .tracking-log::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+  .log-entry {
+    padding: 3px 0;
+    border-top: 1px dotted #eee;
+    display: flex; gap: 8px; align-items: center;
+    animation: log-slide 0.4s ease-out;
+  }
+  .log-entry:first-child { border-top: none; }
+  .log-time { color: #999; flex-shrink: 0; }
+  .log-icon { flex-shrink: 0; }
+  .log-text { flex: 1; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @keyframes log-slide {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .checkpoint-toast {
+    position: absolute;
+    top: 50%; right: clamp(10px, 3vmin, 30px);
+    background: linear-gradient(90deg, #2ec4b6, #06d6a0); color: #fff;
+    border-radius: 12px;
+    padding: clamp(8px, 1.6vmin, 14px) clamp(14px, 3vmin, 22px);
+    font-size: clamp(13px, 2.6vmin, 18px);
+    font-weight: bold;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    z-index: 12;
+    border: 3px solid #fff;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(120%, -50%);
+  }
+  .checkpoint-toast.show {
+    animation: toast-pop 1.6s ease-out forwards;
+  }
+  @keyframes toast-pop {
+    0% { transform: translate(120%, -50%); opacity: 0; }
+    15% { transform: translate(0, -50%); opacity: 1; }
+    80% { transform: translate(0, -50%); opacity: 1; }
+    100% { transform: translate(20px, -50%); opacity: 0; }
+  }
+
+  .map-progress {
+    position: absolute;
+    bottom: clamp(8px, 2vmin, 20px); left: 50%; transform: translateX(-50%);
+    display: flex; gap: clamp(2px, 0.5vmin, 6px);
+    background: rgba(255,255,255,0.9);
+    padding: clamp(4px, 1vmin, 10px) clamp(8px, 2vmin, 16px);
+    border-radius: 999px;
+    border: 3px solid #fff;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+    z-index: 10;
+    max-width: 96vw;
+  }
+  .map-progress-dot {
+    width: clamp(26px, 5vmin, 42px); height: clamp(26px, 5vmin, 42px);
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(13px, 2.6vmin, 20px);
+    transition: all 0.3s;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .map-progress-dot.done {
+    background: #2ec4b6;
+    color: #fff;
+  }
+  .map-progress-dot.active {
+    background: #ffd60a;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(255,214,10,0.4);
+    animation: dot-pulse 0.8s ease-in-out infinite;
+  }
+  @keyframes dot-pulse {
+    0%, 100% { transform: scale(1.2); }
+    50% { transform: scale(1.35); }
+  }
+  .map-progress-dot:not(:last-child)::after {
+    content: ""; position: absolute;
+    right: -4px; top: 50%; width: 4px; height: 2px;
+    background: #ccc;
+    transform: translateY(-50%);
+  }
+
+  /* 包裹小图标跟随飞行 */
+  .pkg-trail {
+    position: absolute;
+    width: 30px; height: 30px;
+    background: #d4a373;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 6;
+    pointer-events: none;
+  }
+  .pkg-trail::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 45%;
+    height: 4px; background: #f4d35e;
+  }
+
+  /* 烟尘 */
+  .smoke-puff {
+    position: absolute;
+    width: 24px; height: 24px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: puff-fade 1s ease-out forwards;
+  }
+  @keyframes puff-fade {
+    from { transform: scale(0.5); opacity: 0.8; }
+    to { transform: scale(1.8) translateY(-20px); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="icon-btn home-link" href="../" aria-label="返回游戏合集">🏠</a>
+      <div class="coin-display">⭐ <span id="coinCount">0</span></div>
+      <button class="icon-btn" id="muteBtn" aria-label="静音">🔊</button>
+    </div>
+    <div class="collection-btn" id="openCollection">📖 图鉴 <span id="collectionCount">0</span>/<span id="collectionTotal">0</span></div>
+  </div>
+
+  <!-- 场景：门口 -->
+  <div class="scene door-scene" id="sceneDoor">
+    <svg class="house-scene-bg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#87ceeb"/>
+          <stop offset="55%" stop-color="#c5e3f0"/>
+          <stop offset="100%" stop-color="#ffd6a5"/>
+        </linearGradient>
+        <linearGradient id="lawnGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7ed957"/>
+          <stop offset="100%" stop-color="#4a9b50"/>
+        </linearGradient>
+        <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fff5e1"/>
+          <stop offset="100%" stop-color="#f4d9a4"/>
+        </linearGradient>
+        <linearGradient id="roofGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e63946"/>
+          <stop offset="100%" stop-color="#a52833"/>
+        </linearGradient>
+        <linearGradient id="doorGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a06030"/>
+          <stop offset="100%" stop-color="#6b3410"/>
+        </linearGradient>
+        <pattern id="brickPat" width="30" height="14" patternUnits="userSpaceOnUse">
+          <rect width="30" height="14" fill="#c97f51"/>
+          <rect x="1" y="1" width="13" height="5" fill="#d4936a" stroke="#7c4a2a" stroke-width="0.5"/>
+          <rect x="16" y="1" width="13" height="5" fill="#d4936a" stroke="#7c4a2a" stroke-width="0.5"/>
+          <rect x="8" y="8" width="13" height="5" fill="#d4936a" stroke="#7c4a2a" stroke-width="0.5"/>
+        </pattern>
+        <pattern id="shinglePat" width="40" height="14" patternUnits="userSpaceOnUse">
+          <path d="M0,7 Q10,2 20,7 Q30,12 40,7 L40,14 L0,14 Z" fill="#7d1e26" opacity="0.5"/>
+        </pattern>
+        <radialGradient id="sunGrad" cx="40%" cy="40%">
+          <stop offset="0%" stop-color="#fff8b0"/>
+          <stop offset="60%" stop-color="#ffd60a"/>
+          <stop offset="100%" stop-color="#ff9500"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 天空 -->
+      <rect width="1000" height="380" fill="url(#skyGrad)"/>
+
+      <!-- 太阳 + 光芒 -->
+      <g transform="translate(840,90)">
+        <g stroke="#ffd60a" stroke-width="3" stroke-linecap="round" opacity="0.6">
+          <line x1="0" y1="-78" x2="0" y2="-95"/>
+          <line x1="55" y1="-55" x2="67" y2="-67"/>
+          <line x1="78" y1="0" x2="95" y2="0"/>
+          <line x1="55" y1="55" x2="67" y2="67"/>
+          <line x1="-55" y1="55" x2="-67" y2="67"/>
+          <line x1="-78" y1="0" x2="-95" y2="0"/>
+          <line x1="-55" y1="-55" x2="-67" y2="-67"/>
+        </g>
+        <circle r="55" fill="url(#sunGrad)"/>
+        <ellipse cx="-15" cy="-18" rx="14" ry="9" fill="#fff8b0" opacity="0.7"/>
+      </g>
+
+      <!-- 云朵 -->
+      <g opacity="0.95">
+        <ellipse cx="200" cy="120" rx="55" ry="14" fill="#fff"/>
+        <circle cx="180" cy="105" r="22" fill="#fff"/>
+        <circle cx="210" cy="95" r="28" fill="#fff"/>
+        <circle cx="240" cy="105" r="20" fill="#fff"/>
+      </g>
+      <g opacity="0.9">
+        <ellipse cx="500" cy="55" rx="45" ry="12" fill="#fff"/>
+        <circle cx="485" cy="45" r="18" fill="#fff"/>
+        <circle cx="515" cy="38" r="22" fill="#fff"/>
+      </g>
+      <g opacity="0.85">
+        <ellipse cx="660" cy="155" rx="40" ry="10" fill="#fff"/>
+        <circle cx="650" cy="148" r="15" fill="#fff"/>
+        <circle cx="675" cy="142" r="18" fill="#fff"/>
+      </g>
+
+      <!-- 飞鸟 -->
+      <g stroke="#1d3557" stroke-width="2.5" fill="none" stroke-linecap="round">
+        <path d="M340,180 q6,-5 12,0 q6,-5 12,0"/>
+        <path d="M650,140 q5,-4 10,0 q5,-4 10,0"/>
+        <path d="M380,210 q4,-3 8,0 q4,-3 8,0"/>
+      </g>
+
+      <!-- 远山（双层）-->
+      <path d="M0,360 Q200,290 400,330 Q600,270 800,320 Q900,300 1000,330 L1000,400 L0,400 Z" fill="#8fc99c" opacity="0.7"/>
+      <path d="M0,380 Q150,340 350,365 Q550,330 750,360 Q900,350 1000,370 L1000,400 L0,400 Z" fill="#7ab884" opacity="0.85"/>
+
+      <!-- 草地 -->
+      <rect y="380" width="1000" height="220" fill="url(#lawnGrad)"/>
+
+      <!-- 草丛纹理 -->
+      <g stroke="#3a8c4a" stroke-width="1.4" opacity="0.55" fill="none" stroke-linecap="round">
+        <path d="M40,500 l3,-9 m4,4 l3,-10 m4,5 l2,-8"/>
+        <path d="M120,520 l3,-9 m4,4 l3,-10"/>
+        <path d="M200,540 l3,-9 m4,4 l3,-10 m4,5 l2,-8"/>
+        <path d="M810,505 l3,-9 m4,4 l3,-10"/>
+        <path d="M880,535 l3,-9 m4,4 l3,-10 m4,5 l2,-8"/>
+        <path d="M940,510 l3,-9 m4,4 l3,-10"/>
+        <path d="M180,565 l3,-8 m4,4 l3,-9"/>
+        <path d="M860,575 l3,-8 m4,4 l3,-9"/>
+      </g>
+
+      <!-- 散落小花 -->
+      <g>
+        <g transform="translate(180,540)"><line x1="0" y1="0" x2="0" y2="10" stroke="#3a8c4a" stroke-width="1"/><circle cx="0" cy="-1" r="4" fill="#ff6b9d"/><circle cx="0" cy="-1" r="1.5" fill="#ffd60a"/></g>
+        <g transform="translate(820,565)"><line x1="0" y1="0" x2="0" y2="10" stroke="#3a8c4a" stroke-width="1"/><circle cx="0" cy="-1" r="4" fill="#e63946"/><circle cx="0" cy="-1" r="1.5" fill="#ffd60a"/></g>
+        <g transform="translate(80,560)"><line x1="0" y1="0" x2="0" y2="8" stroke="#3a8c4a" stroke-width="1"/><circle cx="0" cy="-1" r="3.5" fill="#ffd60a"/><circle cx="0" cy="-1" r="1.2" fill="#fff"/></g>
+        <g transform="translate(900,540)"><line x1="0" y1="0" x2="0" y2="10" stroke="#3a8c4a" stroke-width="1"/><circle cx="0" cy="-1" r="4" fill="#9b59b6"/><circle cx="0" cy="-1" r="1.5" fill="#ffd60a"/></g>
+        <g transform="translate(60,490)"><line x1="0" y1="0" x2="0" y2="8" stroke="#3a8c4a" stroke-width="1"/><circle cx="0" cy="-1" r="3.5" fill="#ff6b9d"/></g>
+        <g transform="translate(940,485)"><line x1="0" y1="0" x2="0" y2="8" stroke="#3a8c4a" stroke-width="1"/><circle cx="0" cy="-1" r="3.5" fill="#ff6b9d"/></g>
+      </g>
+
+      <!-- 苹果树（左）-->
+      <g transform="translate(120,440)">
+        <rect x="-7" y="0" width="14" height="55" fill="#6b3410"/>
+        <line x1="-2" y1="0" x2="-2" y2="55" stroke="#4a2410" stroke-width="0.8"/>
+        <line x1="3" y1="0" x2="3" y2="55" stroke="#4a2410" stroke-width="0.8"/>
+        <ellipse cx="0" cy="-25" rx="55" ry="65" fill="#3a8c4a"/>
+        <ellipse cx="-20" cy="-50" rx="30" ry="35" fill="#52b788"/>
+        <ellipse cx="20" cy="-45" rx="28" ry="32" fill="#52b788"/>
+        <ellipse cx="0" cy="-65" rx="25" ry="28" fill="#74c69d"/>
+        <ellipse cx="-15" cy="-50" rx="12" ry="18" fill="#94d4a8" opacity="0.6"/>
+        <circle cx="-25" cy="-15" r="4.5" fill="#e63946"/><circle cx="-26" cy="-16" r="1.5" fill="#fff" opacity="0.6"/>
+        <circle cx="15" cy="-30" r="4.5" fill="#e63946"/><circle cx="14" cy="-31" r="1.5" fill="#fff" opacity="0.6"/>
+        <circle cx="-5" cy="-55" r="4.5" fill="#e63946"/><circle cx="-6" cy="-56" r="1.5" fill="#fff" opacity="0.6"/>
+        <circle cx="30" cy="-25" r="4" fill="#e63946"/>
+      </g>
+
+      <!-- 苹果树（右）-->
+      <g transform="translate(880,440)">
+        <rect x="-7" y="0" width="14" height="55" fill="#6b3410"/>
+        <ellipse cx="0" cy="-25" rx="55" ry="65" fill="#3a8c4a"/>
+        <ellipse cx="-20" cy="-50" rx="30" ry="35" fill="#52b788"/>
+        <ellipse cx="20" cy="-45" rx="28" ry="32" fill="#52b788"/>
+        <ellipse cx="0" cy="-65" rx="25" ry="28" fill="#74c69d"/>
+        <ellipse cx="15" cy="-50" rx="12" ry="18" fill="#94d4a8" opacity="0.6"/>
+        <circle cx="25" cy="-15" r="4.5" fill="#e63946"/><circle cx="24" cy="-16" r="1.5" fill="#fff" opacity="0.6"/>
+        <circle cx="-15" cy="-30" r="4.5" fill="#e63946"/><circle cx="-16" cy="-31" r="1.5" fill="#fff" opacity="0.6"/>
+        <circle cx="5" cy="-58" r="4.5" fill="#e63946"/>
+        <circle cx="-30" cy="-25" r="4" fill="#e63946"/>
+      </g>
+
+      <!-- 石板小路 -->
+      <g>
+        <ellipse cx="500" cy="585" rx="62" ry="11" fill="#9a9a96" stroke="#7d7d77" stroke-width="1"/>
+        <ellipse cx="500" cy="540" rx="55" ry="10" fill="#a8a8a2" stroke="#7d7d77" stroke-width="1"/>
+        <ellipse cx="500" cy="500" rx="48" ry="9" fill="#9a9a96" stroke="#7d7d77" stroke-width="1"/>
+        <ellipse cx="500" cy="465" rx="42" ry="8" fill="#a8a8a2" stroke="#7d7d77" stroke-width="1"/>
+      </g>
+
+      <!-- 房屋地基 -->
+      <rect x="285" y="395" width="430" height="35" fill="#8a8a86"/>
+      <rect x="285" y="395" width="430" height="6" fill="#a8a8a2"/>
+      <g stroke="#6c6c66" stroke-width="0.8" fill="none">
+        <line x1="285" y1="410" x2="715" y2="410"/>
+        <line x1="320" y1="395" x2="320" y2="430"/><line x1="380" y1="410" x2="380" y2="430"/>
+        <line x1="440" y1="395" x2="440" y2="410"/><line x1="500" y1="410" x2="500" y2="430"/>
+        <line x1="560" y1="395" x2="560" y2="410"/><line x1="620" y1="410" x2="620" y2="430"/>
+        <line x1="680" y1="395" x2="680" y2="430"/>
+      </g>
+
+      <!-- 墙体 -->
+      <rect x="290" y="200" width="420" height="200" fill="url(#wallGrad)"/>
+      <g stroke="#a07849" stroke-width="0.8" opacity="0.4">
+        <line x1="290" y1="225" x2="710" y2="225"/><line x1="290" y1="250" x2="710" y2="250"/>
+        <line x1="290" y1="275" x2="710" y2="275"/><line x1="290" y1="300" x2="710" y2="300"/>
+        <line x1="290" y1="325" x2="710" y2="325"/><line x1="290" y1="350" x2="710" y2="350"/>
+        <line x1="290" y1="375" x2="710" y2="375"/>
+      </g>
+      <rect x="290" y="200" width="6" height="200" fill="#8b5a2b"/>
+      <rect x="704" y="200" width="6" height="200" fill="#8b5a2b"/>
+      <rect x="290" y="200" width="420" height="6" fill="#8b5a2b"/>
+
+      <!-- 屋顶 -->
+      <path d="M270,220 L500,90 L730,220 Z" fill="url(#roofGrad)"/>
+      <path d="M270,220 L500,90 L730,220 Z" fill="url(#shinglePat)"/>
+      <path d="M260,210 L500,80 L740,210 L730,220 L500,95 L270,220 Z" fill="#7d1e26"/>
+      <rect x="260" y="207" width="480" height="4" fill="#5a121a"/>
+
+      <!-- 烟囱 + 烟 -->
+      <rect x="380" y="80" width="38" height="100" fill="url(#brickPat)"/>
+      <rect x="378" y="76" width="42" height="10" fill="#7c4a2a"/>
+      <rect x="380" y="78" width="38" height="2" fill="#3a1d10"/>
+      <g opacity="0.75">
+        <circle cx="399" cy="65" r="9" fill="#fff">
+          <animate attributeName="cy" values="65;25" dur="4s" repeatCount="indefinite"/>
+          <animate attributeName="r" values="9;15" dur="4s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.75;0" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="394" cy="55" r="10" fill="#fff">
+          <animate attributeName="cy" values="55;15" dur="4s" begin="-1.5s" repeatCount="indefinite"/>
+          <animate attributeName="r" values="10;16" dur="4s" begin="-1.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.75;0" dur="4s" begin="-1.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="402" cy="50" r="8" fill="#fff">
+          <animate attributeName="cy" values="50;10" dur="4s" begin="-2.7s" repeatCount="indefinite"/>
+          <animate attributeName="r" values="8;14" dur="4s" begin="-2.7s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.75;0" dur="4s" begin="-2.7s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+
+      <!-- 阁楼小窗（屋顶里） -->
+      <g transform="translate(500,160)">
+        <path d="M-25,0 A25,30 0 0,1 25,0 L25,40 L-25,40 Z" fill="#1d3557"/>
+        <path d="M-22,3 A22,27 0 0,1 22,3 L22,37 L-22,37 Z" fill="#a8dadc"/>
+        <line x1="0" y1="3" x2="0" y2="37" stroke="#1d3557" stroke-width="2"/>
+        <line x1="-22" y1="20" x2="22" y2="20" stroke="#1d3557" stroke-width="2"/>
+        <path d="M-15,5 A15,18 0 0,1 0,5 L0,15 L-15,15 Z" fill="#fff" opacity="0.35"/>
+      </g>
+
+      <!-- 左窗户 + 百叶 + 花箱 -->
+      <g transform="translate(330,290)">
+        <rect x="-30" y="-2" width="22" height="78" fill="#5a8a4a" stroke="#3a5a30" stroke-width="1"/>
+        <g stroke="#3a5a30" stroke-width="0.6"><line x1="-29" y1="10" x2="-9" y2="10"/><line x1="-29" y1="22" x2="-9" y2="22"/><line x1="-29" y1="34" x2="-9" y2="34"/><line x1="-29" y1="46" x2="-9" y2="46"/><line x1="-29" y1="58" x2="-9" y2="58"/><line x1="-29" y1="70" x2="-9" y2="70"/></g>
+        <rect x="68" y="-2" width="22" height="78" fill="#5a8a4a" stroke="#3a5a30" stroke-width="1"/>
+        <g stroke="#3a5a30" stroke-width="0.6"><line x1="69" y1="10" x2="89" y2="10"/><line x1="69" y1="22" x2="89" y2="22"/><line x1="69" y1="34" x2="89" y2="34"/><line x1="69" y1="46" x2="89" y2="46"/><line x1="69" y1="58" x2="89" y2="58"/><line x1="69" y1="70" x2="89" y2="70"/></g>
+        <rect x="-7" y="-7" width="74" height="84" fill="#8b5a2b"/>
+        <rect width="60" height="70" fill="#a8dadc"/>
+        <path d="M2,2 L2,38 L18,32 L24,40 L24,2 Z" fill="#ff6b9d" opacity="0.85"/>
+        <path d="M58,2 L58,38 L42,32 L36,40 L36,2 Z" fill="#ff6b9d" opacity="0.85"/>
+        <line x1="30" y1="0" x2="30" y2="70" stroke="#8b5a2b" stroke-width="3"/>
+        <line x1="0" y1="35" x2="60" y2="35" stroke="#8b5a2b" stroke-width="3"/>
+        <path d="M3,3 L3,15 L20,5 Z" fill="#fff" opacity="0.4"/>
+        <rect x="-12" y="78" width="84" height="18" fill="#5a2d0c" stroke="#3a1d05" stroke-width="1"/>
+        <rect x="-10" y="78" width="80" height="3" fill="#7d4f25"/>
+        <g><circle cx="-2" cy="74" r="5" fill="#e63946"/><circle cx="-2" cy="74" r="2" fill="#ffd60a"/><circle cx="14" cy="71" r="5" fill="#ff6b9d"/><circle cx="14" cy="71" r="2" fill="#ffd60a"/><circle cx="30" cy="73" r="5" fill="#ffd60a"/><circle cx="30" cy="73" r="2" fill="#e63946"/><circle cx="46" cy="70" r="5" fill="#ff6b9d"/><circle cx="46" cy="70" r="2" fill="#ffd60a"/><circle cx="62" cy="73" r="5" fill="#e63946"/><circle cx="62" cy="73" r="2" fill="#ffd60a"/></g>
+      </g>
+
+      <!-- 右窗户 -->
+      <g transform="translate(610,290)">
+        <rect x="-30" y="-2" width="22" height="78" fill="#5a8a4a" stroke="#3a5a30" stroke-width="1"/>
+        <g stroke="#3a5a30" stroke-width="0.6"><line x1="-29" y1="10" x2="-9" y2="10"/><line x1="-29" y1="22" x2="-9" y2="22"/><line x1="-29" y1="34" x2="-9" y2="34"/><line x1="-29" y1="46" x2="-9" y2="46"/><line x1="-29" y1="58" x2="-9" y2="58"/><line x1="-29" y1="70" x2="-9" y2="70"/></g>
+        <rect x="68" y="-2" width="22" height="78" fill="#5a8a4a" stroke="#3a5a30" stroke-width="1"/>
+        <g stroke="#3a5a30" stroke-width="0.6"><line x1="69" y1="10" x2="89" y2="10"/><line x1="69" y1="22" x2="89" y2="22"/><line x1="69" y1="34" x2="89" y2="34"/><line x1="69" y1="46" x2="89" y2="46"/><line x1="69" y1="58" x2="89" y2="58"/><line x1="69" y1="70" x2="89" y2="70"/></g>
+        <rect x="-7" y="-7" width="74" height="84" fill="#8b5a2b"/>
+        <rect width="60" height="70" fill="#a8dadc"/>
+        <path d="M2,2 L2,38 L18,32 L24,40 L24,2 Z" fill="#ff6b9d" opacity="0.85"/>
+        <path d="M58,2 L58,38 L42,32 L36,40 L36,2 Z" fill="#ff6b9d" opacity="0.85"/>
+        <line x1="30" y1="0" x2="30" y2="70" stroke="#8b5a2b" stroke-width="3"/>
+        <line x1="0" y1="35" x2="60" y2="35" stroke="#8b5a2b" stroke-width="3"/>
+        <path d="M3,3 L3,15 L20,5 Z" fill="#fff" opacity="0.4"/>
+        <rect x="-12" y="78" width="84" height="18" fill="#5a2d0c" stroke="#3a1d05" stroke-width="1"/>
+        <rect x="-10" y="78" width="80" height="3" fill="#7d4f25"/>
+        <g><circle cx="-2" cy="74" r="5" fill="#9b59b6"/><circle cx="-2" cy="74" r="2" fill="#ffd60a"/><circle cx="14" cy="71" r="5" fill="#ffd60a"/><circle cx="14" cy="71" r="2" fill="#e63946"/><circle cx="30" cy="73" r="5" fill="#e63946"/><circle cx="30" cy="73" r="2" fill="#ffd60a"/><circle cx="46" cy="70" r="5" fill="#9b59b6"/><circle cx="46" cy="70" r="2" fill="#ffd60a"/><circle cx="62" cy="73" r="5" fill="#ff6b9d"/><circle cx="62" cy="73" r="2" fill="#ffd60a"/></g>
+      </g>
+
+      <!-- 门 + 门框 + 圣诞花环 -->
+      <g transform="translate(440,265)">
+        <path d="M-10,160 L-10,15 Q-10,-5 10,-5 L110,-5 Q130,-5 130,15 L130,160" fill="#5a2d0c"/>
+        <path d="M0,160 L0,20 Q0,5 15,5 L105,5 Q120,5 120,20 L120,160 Z" fill="url(#doorGrad)"/>
+        <g stroke="#5a2d0c" stroke-width="0.6" opacity="0.55">
+          <line x1="20" y1="20" x2="20" y2="155"/><line x1="40" y1="20" x2="40" y2="155"/>
+          <line x1="60" y1="20" x2="60" y2="155"/><line x1="80" y1="20" x2="80" y2="155"/>
+          <line x1="100" y1="20" x2="100" y2="155"/>
+        </g>
+        <rect x="15" y="78" width="40" height="55" fill="none" stroke="#3a1d05" stroke-width="2" rx="3"/>
+        <rect x="65" y="78" width="40" height="55" fill="none" stroke="#3a1d05" stroke-width="2" rx="3"/>
+        <rect x="38" y="58" width="44" height="16" fill="#fff" stroke="#1d3557" stroke-width="1" rx="2"/>
+        <text id="doorNumberText" x="60" y="71" text-anchor="middle" font-size="12" font-weight="bold" fill="#1d3557" font-family="sans-serif">88</text>
+        <rect x="98" y="100" width="14" height="18" fill="#b8860b" rx="2"/>
+        <circle cx="105" cy="110" r="5" fill="#ffd60a" stroke="#7c5e10" stroke-width="1"/>
+        <circle cx="105" cy="110" r="2" fill="#fff" opacity="0.7"/>
+        <rect x="42" y="138" width="36" height="5" fill="#1d3557" stroke="#0a1828" stroke-width="0.6"/>
+        <!-- 圣诞花环 -->
+        <circle cx="60" cy="35" r="14" fill="none" stroke="#3a8c4a" stroke-width="3.5"/>
+        <circle cx="50" cy="29" r="3" fill="#52b788"/>
+        <circle cx="70" cy="29" r="3" fill="#52b788"/>
+        <circle cx="55" cy="44" r="3" fill="#52b788"/>
+        <circle cx="68" cy="44" r="3" fill="#52b788"/>
+        <circle cx="60" cy="22" r="3" fill="#52b788"/>
+        <circle cx="46" cy="38" r="3" fill="#74c69d"/>
+        <circle cx="74" cy="38" r="3" fill="#74c69d"/>
+        <path d="M55,48 L65,48 L60,55 Z" fill="#e63946"/>
+        <circle cx="56" cy="33" r="1.8" fill="#e63946"/>
+        <circle cx="65" cy="36" r="1.8" fill="#e63946"/>
+      </g>
+
+      <!-- 欢迎垫 -->
+      <ellipse cx="500" cy="455" rx="80" ry="14" fill="#7d1e26"/>
+      <ellipse cx="500" cy="450" rx="78" ry="12" fill="#a52833"/>
+      <text x="500" y="455" text-anchor="middle" font-size="11" font-weight="bold" fill="#fff" font-family="sans-serif">WELCOME</text>
+
+      <!-- 信箱 -->
+      <g transform="translate(720,455)">
+        <rect x="-3" y="-5" width="6" height="35" fill="#5a2d0c"/>
+        <rect x="-22" y="-25" width="44" height="22" fill="#e63946" rx="3"/>
+        <path d="M-22,-25 L0,-35 L22,-25 Z" fill="#c1121f"/>
+        <text x="0" y="-12" text-anchor="middle" font-size="9" font-weight="bold" fill="#fff" font-family="sans-serif">POST</text>
+        <line x1="22" y1="-25" x2="22" y2="-40" stroke="#1d3557" stroke-width="1.5"/>
+        <path d="M22,-40 L34,-37 L22,-32 Z" fill="#ffd60a"/>
+      </g>
+
+      <!-- 路灯 -->
+      <g transform="translate(310,470)">
+        <rect x="-2" y="-65" width="4" height="65" fill="#1d3557"/>
+        <path d="M-7,-78 L7,-78 L9,-72 L-9,-72 Z" fill="#1d3557"/>
+        <circle cx="0" cy="-83" r="9" fill="#ffd60a" opacity="0.85"/>
+        <circle cx="0" cy="-83" r="6" fill="#ffec8b"/>
+        <g stroke="#ffec8b" stroke-width="1" opacity="0.5">
+          <line x1="-12" y1="-83" x2="-15" y2="-83"/>
+          <line x1="12" y1="-83" x2="15" y2="-83"/>
+          <line x1="0" y1="-95" x2="0" y2="-98"/>
+        </g>
+      </g>
+
+      <!-- 绿篱（房子两侧）-->
+      <g>
+        <ellipse cx="270" cy="430" rx="35" ry="20" fill="#3a8c4a"/>
+        <ellipse cx="265" cy="420" rx="20" ry="15" fill="#52b788"/>
+        <ellipse cx="280" cy="425" rx="15" ry="12" fill="#52b788"/>
+        <ellipse cx="730" cy="430" rx="35" ry="20" fill="#3a8c4a"/>
+        <ellipse cx="725" cy="420" rx="20" ry="15" fill="#52b788"/>
+        <ellipse cx="740" cy="425" rx="15" ry="12" fill="#52b788"/>
+      </g>
+    </svg>
+
+    <div class="scene-title" id="doorTitle">叮咚！快递来啦 🚚</div>
+    <div class="delivery-truck" id="truck"></div>
+    <div class="package-on-doorstep" id="packageDoor" style="display:none"></div>
+    <div class="tap-hint" id="doorHint" style="display:none">👆 点一下打开</div>
+    <div class="shop-row" id="shopRow" style="position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px) + 24px); left:0; right:0; display:none; z-index:9"></div>
+  </div>
+
+  <!-- 场景：物流地图（俯视追踪图） -->
+  <div class="scene map-scene hidden" id="sceneMap">
+    <svg class="map-svg" id="mapSvg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a8dadc"/>
+          <stop offset="100%" stop-color="#7ab8c8"/>
+        </linearGradient>
+        <radialGradient id="landGrad" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#fdf3d4"/>
+          <stop offset="100%" stop-color="#e0cd9a"/>
+        </radialGradient>
+        <filter id="mapShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.18"/>
+        </filter>
+        <filter id="dotShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.3"/>
+        </filter>
+      </defs>
+      <g id="mapStatic"></g>
+      <path id="routeShadow" d="" stroke="rgba(0,0,0,0.18)" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,4)"/>
+      <path id="routeBg" d="" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+      <path id="routePath" d="" stroke="#e63946" stroke-width="5" stroke-dasharray="14 8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <animate attributeName="stroke-dashoffset" from="0" to="-44" dur="1.5s" repeatCount="indefinite"/>
+      </path>
+      <g id="waypoints"></g>
+      <g id="movingPkg" transform="translate(80,470)">
+        <circle r="32" fill="#ffd60a" opacity="0.4">
+          <animate attributeName="r" values="28;46" dur="1.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.5;0" dur="1.2s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="24" fill="#ffd60a" stroke="#1d3557" stroke-width="3" filter="url(#dotShadow)"/>
+        <text id="pkgEmoji" text-anchor="middle" dominant-baseline="central" font-size="26" font-family="sans-serif">📦</text>
+      </g>
+    </svg>
+    <div class="tracking-card" id="trackingCard">
+      <div class="tracking-header">
+        <span>📋 <span id="trackingNum">SF000000000000</span></span>
+        <span class="tag" id="trackingLabel">同城速达</span>
+        <span class="tracking-route"><span id="trackingFrom">起点</span> → 你家 🏠</span>
+      </div>
+      <div class="tracking-current" id="trackingCurrent">出库中...</div>
+      <div class="tracking-log" id="trackingLog"></div>
+    </div>
+    <div class="checkpoint-toast" id="checkpointToast"></div>
+    <div class="map-progress" id="mapProgress"></div>
+  </div>
+
+  <!-- 场景：电梯（选楼层 + 选房间）-->
+  <div class="scene elevator-scene hidden" id="sceneElevator">
+    <div class="elev-interior"></div>
+    <div class="elev-mirror"></div>
+    <div class="elev-handrail"></div>
+    <div class="elev-light"></div>
+
+    <!-- 楼层显示屏 -->
+    <div class="elev-display-frame">
+      <div class="elev-display">
+        <span class="elev-arrow" id="elevArrow">▲</span>
+        <span class="elev-num" id="elevDisplayNum">1</span>
+        <span class="elev-suffix">F</span>
+      </div>
+    </div>
+
+    <!-- 走廊（电梯门后面） -->
+    <div class="hallway-bg" id="hallwayBg">
+      <div class="hallway-floor"></div>
+      <div class="hallway-walls"></div>
+      <div class="hallway-doors" id="hallwayDoors"></div>
+    </div>
+
+    <!-- 电梯门 -->
+    <div class="elev-doors" id="elevDoors">
+      <div class="elev-door elev-door-left"></div>
+      <div class="elev-door elev-door-right"></div>
+    </div>
+
+    <!-- 选择面板 -->
+    <div class="elev-panel" id="elevPanel">
+      <div class="elev-panel-title" id="elevPanelTitle">🛗 请选择楼层</div>
+      <div class="elev-buttons" id="elevButtons"></div>
+    </div>
+
+    <!-- 提示 -->
+    <div class="scene-title" id="elevTitle">🛗 电梯</div>
+    <div class="delivery-msg hidden" id="deliveryMsg"></div>
+  </div>
+
+  <!-- 场景：拆箱 -->
+  <div class="scene unbox-scene hidden" id="sceneUnbox">
+    <div class="scene-title" id="unboxTitle">拆开它！</div>
+    <div class="package-big" id="bigBox">
+      <div class="box-body">
+        <div class="shipping-label">
+          <div class="label-header">★ EXPRESS ★</div>
+          <div class="label-line medium"></div>
+          <div class="label-line short"></div>
+          <div class="label-line medium"></div>
+          <div class="label-line short"></div>
+          <div class="barcode"></div>
+          <div class="stamp">已签收</div>
+        </div>
+        <div class="fragile-mark">
+          <svg viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="56" height="66" fill="none" stroke="#d62828" stroke-width="3" rx="3"/>
+            <path d="M30 14 L20 30 L26 30 L18 50 L42 30 L34 30 L40 14 Z" fill="#d62828"/>
+            <text x="30" y="64" text-anchor="middle" fill="#d62828" font-size="9" font-weight="bold" font-family="sans-serif">易碎</text>
+          </svg>
+        </div>
+      </div>
+      <div class="box-flap-left"></div>
+      <div class="box-flap-right"></div>
+      <div class="tape" id="tape"></div>
+      <div class="tape-right-half"></div>
+      <div class="cutter" id="cutter">✂️</div>
+    </div>
+    <div class="tap-hint" id="unboxHint">👆 划开胶带</div>
+    <div class="bubble-counter" id="bubbleCounter" style="display:none">0/49</div>
+    <div class="table"></div>
+  </div>
+
+  <!-- 场景：揭晓 -->
+  <div class="scene reveal-scene hidden" id="sceneReveal">
+    <div class="reveal-bg-rays"></div>
+    <div id="legendaryGlow"></div>
+    <div class="toy-reveal" id="toyReveal"></div>
+    <div class="toy-name" id="toyName">玩具</div>
+    <div class="rarity-badge" id="rarityBadge">普通</div>
+    <div class="price-tag" id="rewardCoins">+0 ⭐</div>
+    <div class="bonus-text" id="bonusText">🎉 全部戳爆 +5⭐</div>
+    <button class="big-btn green" id="continueBtn">再来一个！</button>
+  </div>
+
+  <!-- 收藏图鉴 -->
+  <div class="collection-modal hidden" id="collectionModal">
+    <div class="collection-content">
+      <div class="collection-header">
+        <div class="collection-title">📖 我的玩具图鉴</div>
+        <button class="close-btn" id="closeCollection">×</button>
+      </div>
+      <div class="progress-text" id="progressText">已收集 0/0 件玩具</div>
+      <div class="collection-grid" id="collectionGrid"></div>
+    </div>
+  </div>
+
+  <!-- 玩具详情 -->
+  <div class="collection-modal hidden" id="toyDetailModal">
+    <div class="toy-detail-content">
+      <button class="close-btn" id="closeToyDetail">×</button>
+      <div class="toy-detail-svg" id="toyDetailSvg"></div>
+      <div class="toy-detail-name" id="toyDetailName"></div>
+      <div class="rarity-badge" id="toyDetailRarity"></div>
+      <div class="toy-detail-stats" id="toyDetailStats"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SVG 公共定义
+// ============================================================
+const SVG_DEFS = `<defs>
+  <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-opacity="0.3"/>
+  </filter>
+  <radialGradient id="shine" cx="30%" cy="25%" r="50%">
+    <stop offset="0%" stop-color="#fff" stop-opacity="0.7"/>
+    <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+</defs>`;
+
+// ============================================================
+// 玩具 SVG 库（手绘矢量插画）
+// ============================================================
+const TOY_SVGS = {
+  // ============ 普通 ============
+  car_red: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="80" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M25,140 L25,115 Q25,98 45,98 L65,98 L82,55 Q86,45 100,45 L130,45 Q146,45 155,58 L172,98 L180,103 Q185,108 185,118 L185,150 Q185,158 175,158 L165,158 A20,20 0 0,0 125,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q25,158 25,148 Z" fill="#e63946"/>
+    <path d="M82,55 L72,98 H170 L160,68 L155,58 Q150,55 145,55 Z" fill="#1d3557" opacity="0.18"/>
+    <rect x="82" y="60" width="58" height="38" rx="5" fill="#a8dadc"/>
+    <line x1="111" y1="60" x2="111" y2="98" stroke="#1d3557" stroke-width="2.5"/>
+    <ellipse cx="92" cy="72" rx="20" ry="8" fill="#fff" opacity="0.6"/>
+    <rect x="20" y="118" width="160" height="3" fill="#000" opacity="0.25"/>
+    <circle cx="55" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="55" cy="158" r="5" fill="#495057"/>
+    <circle cx="145" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="5" fill="#495057"/>
+    <rect x="172" y="124" width="14" height="9" rx="2" fill="#ffd60a"/>
+    <rect x="14" y="124" width="14" height="6" rx="2" fill="#fff" opacity="0.95"/>
+  </g>`,
+
+  car_taxi: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="80" ry="6" fill="#000" opacity="0.2"/>
+    <rect x="78" y="22" width="44" height="14" rx="2" fill="#1d3557"/>
+    <text x="100" y="33" text-anchor="middle" fill="#ffd60a" font-size="11" font-weight="bold" font-family="sans-serif">TAXI</text>
+    <rect x="98" y="36" width="4" height="9" fill="#1d3557"/>
+    <path d="M25,140 L25,115 Q25,98 45,98 L65,98 L82,55 Q86,45 100,45 L130,45 Q146,45 155,58 L172,98 L180,103 Q185,108 185,118 L185,150 Q185,158 175,158 L165,158 A20,20 0 0,0 125,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q25,158 25,148 Z" fill="#ffd60a"/>
+    <rect x="82" y="60" width="58" height="38" rx="5" fill="#a8dadc"/>
+    <line x1="111" y1="60" x2="111" y2="98" stroke="#1d3557" stroke-width="2.5"/>
+    <ellipse cx="92" cy="72" rx="20" ry="8" fill="#fff" opacity="0.6"/>
+    <rect x="20" y="118" width="160" height="6" fill="#000"/>
+    <rect x="22" y="124" width="160" height="3" fill="#fff"/>
+    <rect x="22" y="127" width="160" height="3" fill="#000"/>
+    <rect x="22" y="130" width="160" height="3" fill="#fff"/>
+    <circle cx="55" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="11" fill="#adb5bd"/>
+  </g>`,
+
+  car_suv: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="82" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M22,148 L22,108 Q22,90 40,90 L60,55 Q65,42 80,42 L140,42 Q155,42 162,52 L180,90 Q188,93 188,108 L188,150 Q188,158 178,158 L168,158 A20,20 0 0,0 128,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q22,158 22,150 Z" fill="#2a9d8f"/>
+    <rect x="65" y="55" width="55" height="35" rx="4" fill="#a8dadc"/>
+    <rect x="125" y="55" width="35" height="35" rx="4" fill="#a8dadc"/>
+    <line x1="121" y1="55" x2="121" y2="90" stroke="#1d3557" stroke-width="2"/>
+    <ellipse cx="80" cy="65" rx="18" ry="7" fill="#fff" opacity="0.6"/>
+    <rect x="18" y="120" width="172" height="3" fill="#000" opacity="0.3"/>
+    <rect x="40" y="125" width="120" height="6" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="24" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="13" fill="#adb5bd"/>
+    <circle cx="55" cy="158" r="6" fill="#495057"/>
+    <circle cx="145" cy="158" r="24" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="13" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="6" fill="#495057"/>
+  </g>`,
+
+  ball_soccer: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="55" ry="6" fill="#000" opacity="0.2"/>
+    <circle cx="100" cy="100" r="72" fill="#f8f9fa"/>
+    <polygon points="100,55 122,68 113,93 87,93 78,68" fill="#1a1a1a"/>
+    <polygon points="155,90 148,115 122,118 113,93 132,75" fill="#1a1a1a"/>
+    <polygon points="45,90 67,75 87,93 78,118 52,115" fill="#1a1a1a"/>
+    <polygon points="100,135 78,118 87,143 113,143 122,118" fill="#1a1a1a"/>
+    <line x1="100" y1="55" x2="100" y2="42" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="78" y1="68" x2="62" y2="58" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="122" y1="68" x2="138" y2="58" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="78" y1="118" x2="65" y2="135" stroke="#1a1a1a" stroke-width="2"/>
+    <line x1="122" y1="118" x2="135" y2="135" stroke="#1a1a1a" stroke-width="2"/>
+    <ellipse cx="78" cy="78" rx="22" ry="14" fill="#fff" opacity="0.4"/>
+    <circle cx="100" cy="100" r="72" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  </g>`,
+
+  ball_basketball: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="55" ry="6" fill="#000" opacity="0.2"/>
+    <circle cx="100" cy="100" r="72" fill="#e76f51"/>
+    <circle cx="100" cy="100" r="72" fill="url(#shine)"/>
+    <line x1="100" y1="28" x2="100" y2="172" stroke="#1a1a1a" stroke-width="3"/>
+    <path d="M28,100 Q100,80 172,100" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M28,100 Q100,120 172,100" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M50,42 Q60,100 50,158" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M150,42 Q140,100 150,158" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+  </g>`,
+
+  ball_tennis: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="55" ry="6" fill="#000" opacity="0.2"/>
+    <circle cx="100" cy="100" r="72" fill="#cdd11a"/>
+    <circle cx="100" cy="100" r="72" fill="url(#shine)"/>
+    <path d="M40,55 Q70,90 40,140" stroke="#fff" stroke-width="4" fill="none"/>
+    <path d="M160,55 Q130,90 160,140" stroke="#fff" stroke-width="4" fill="none"/>
+    <ellipse cx="80" cy="75" rx="20" ry="10" fill="#fff" opacity="0.4"/>
+  </g>`,
+
+  duck: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="178" rx="60" ry="5" fill="#000" opacity="0.2"/>
+    <ellipse cx="100" cy="135" rx="65" ry="40" fill="#ffd60a"/>
+    <path d="M70,128 Q60,118 75,115 L155,115 Q165,128 155,135 Z" fill="#fbbf24"/>
+    <circle cx="125" cy="80" r="35" fill="#ffd60a"/>
+    <ellipse cx="125" cy="98" rx="35" ry="15" fill="#fbbf24"/>
+    <path d="M150,80 Q175,82 175,90 Q175,98 158,96 Q148,94 148,86 Z" fill="#f97316"/>
+    <path d="M150,86 Q165,86 165,90 L150,92 Z" fill="#ea580c"/>
+    <circle cx="135" cy="72" r="6" fill="#1a1a1a"/>
+    <circle cx="137" cy="70" r="2" fill="#fff"/>
+    <ellipse cx="65" cy="125" rx="12" ry="8" fill="#fbbf24"/>
+    <ellipse cx="105" cy="120" rx="20" ry="6" fill="#fff" opacity="0.5"/>
+  </g>`,
+
+  cat: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <path d="M55,80 L40,40 L75,65 Z" fill="#f4a460"/>
+    <path d="M145,80 L160,40 L125,65 Z" fill="#f4a460"/>
+    <path d="M50,38 L42,52 L58,55 Z" fill="#ff6b9d"/>
+    <path d="M150,38 L158,52 L142,55 Z" fill="#ff6b9d"/>
+    <ellipse cx="100" cy="110" rx="55" ry="50" fill="#f4a460"/>
+    <ellipse cx="100" cy="135" rx="40" ry="20" fill="#fff5e6"/>
+    <ellipse cx="78" cy="100" rx="8" ry="11" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="100" rx="8" ry="11" fill="#1a1a1a"/>
+    <circle cx="80" cy="96" r="3" fill="#fff"/>
+    <circle cx="124" cy="96" r="3" fill="#fff"/>
+    <path d="M95,128 Q100,135 105,128" fill="#ff6b9d"/>
+    <path d="M85,135 Q100,148 115,135" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="78" y1="128" x2="58" y2="125" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="78" y1="132" x2="58" y2="135" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="122" y1="128" x2="142" y2="125" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="122" y1="132" x2="142" y2="135" stroke="#1a1a1a" stroke-width="1.5"/>
+  </g>`,
+
+  dog: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <ellipse cx="50" cy="95" rx="22" ry="35" fill="#8b5a2b"/>
+    <ellipse cx="150" cy="95" rx="22" ry="35" fill="#8b5a2b"/>
+    <ellipse cx="100" cy="115" rx="58" ry="55" fill="#d4a574"/>
+    <path d="M60,80 Q100,55 140,80 L130,100 Q100,90 70,100 Z" fill="#8b5a2b"/>
+    <ellipse cx="100" cy="135" rx="35" ry="22" fill="#fff5e6"/>
+    <ellipse cx="78" cy="105" rx="7" ry="10" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="105" rx="7" ry="10" fill="#1a1a1a"/>
+    <circle cx="80" cy="102" r="2.5" fill="#fff"/>
+    <circle cx="124" cy="102" r="2.5" fill="#fff"/>
+    <ellipse cx="100" cy="135" rx="11" ry="7" fill="#1a1a1a"/>
+    <path d="M88,148 Q100,160 112,148" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M100,142 L100,150" stroke="#1a1a1a" stroke-width="2"/>
+  </g>`,
+
+  blocks: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="65" ry="5" fill="#000" opacity="0.2"/>
+    <rect x="30" y="125" width="60" height="50" rx="4" fill="#e63946"/>
+    <circle cx="45" cy="120" r="6" fill="#e63946"/>
+    <circle cx="60" cy="120" r="6" fill="#e63946"/>
+    <circle cx="75" cy="120" r="6" fill="#e63946"/>
+    <circle cx="45" cy="118" r="4" fill="#fff" opacity="0.4"/>
+    <rect x="105" y="125" width="60" height="50" rx="4" fill="#2a9d8f"/>
+    <circle cx="120" cy="120" r="6" fill="#2a9d8f"/>
+    <circle cx="135" cy="120" r="6" fill="#2a9d8f"/>
+    <circle cx="150" cy="120" r="6" fill="#2a9d8f"/>
+    <rect x="60" y="60" width="60" height="50" rx="4" fill="#ffd60a"/>
+    <circle cx="75" cy="55" r="6" fill="#ffd60a"/>
+    <circle cx="90" cy="55" r="6" fill="#ffd60a"/>
+    <circle cx="105" cy="55" r="6" fill="#ffd60a"/>
+    <text x="90" y="95" text-anchor="middle" font-size="22" font-weight="bold" fill="#1d3557" font-family="sans-serif">A</text>
+    <text x="60" y="160" text-anchor="middle" font-size="22" font-weight="bold" fill="#fff" font-family="sans-serif">B</text>
+    <text x="135" y="160" text-anchor="middle" font-size="22" font-weight="bold" fill="#fff" font-family="sans-serif">C</text>
+  </g>`,
+
+  // ============ 稀有 ============
+  racecar: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="85" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M10,130 L10,118 Q10,108 20,108 L42,108 L60,80 Q65,72 78,72 L130,72 Q142,72 150,82 L162,108 L182,108 Q190,108 190,118 L190,135 Q190,142 180,142 L170,142 A18,18 0 0,0 130,142 L75,142 A18,18 0 0,0 35,142 L20,142 Q10,142 10,135 Z" fill="#e63946"/>
+    <path d="M65,82 Q70,75 80,75 L125,75 Q135,75 140,82 L150,108 H62 Z" fill="#1d3557"/>
+    <path d="M75,80 Q78,75 85,75 L120,75 Q127,75 130,80 L135,100 H72 Z" fill="#a8dadc" opacity="0.85"/>
+    <rect x="25" y="60" width="55" height="14" rx="3" fill="#1d3557"/>
+    <rect x="120" y="60" width="55" height="14" rx="3" fill="#1d3557"/>
+    <text x="103" y="135" text-anchor="middle" fill="#fff" font-size="20" font-weight="bold" font-family="sans-serif">7</text>
+    <circle cx="55" cy="142" r="22" fill="#1a1a1a"/>
+    <circle cx="55" cy="142" r="13" fill="#495057"/>
+    <circle cx="55" cy="142" r="6" fill="#adb5bd"/>
+    <circle cx="150" cy="142" r="22" fill="#1a1a1a"/>
+    <circle cx="150" cy="142" r="13" fill="#495057"/>
+    <circle cx="150" cy="142" r="6" fill="#adb5bd"/>
+    <rect x="6" y="118" width="10" height="14" rx="1" fill="#ffd60a"/>
+  </g>`,
+
+  fire_truck: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="82" ry="6" fill="#000" opacity="0.2"/>
+    <rect x="20" y="60" width="160" height="80" rx="6" fill="#d62828"/>
+    <rect x="20" y="55" width="160" height="10" rx="3" fill="#1d3557"/>
+    <circle cx="60" cy="50" r="6" fill="#3498db"/>
+    <circle cx="100" cy="50" r="6" fill="#e63946"/>
+    <circle cx="140" cy="50" r="6" fill="#3498db"/>
+    <rect x="120" y="70" width="55" height="55" rx="4" fill="#a8324a"/>
+    <rect x="125" y="75" width="45" height="20" rx="2" fill="#a8dadc"/>
+    <rect x="125" y="100" width="45" height="20" rx="2" fill="#a8dadc"/>
+    <rect x="30" y="80" width="80" height="50" rx="3" fill="#a8324a"/>
+    <text x="70" y="115" text-anchor="middle" fill="#fff" font-size="22" font-weight="bold" font-family="sans-serif">FIRE</text>
+    <line x1="20" y1="125" x2="180" y2="125" stroke="#fff" stroke-width="3"/>
+    <circle cx="55" cy="148" r="20" fill="#1a1a1a"/>
+    <circle cx="55" cy="148" r="10" fill="#adb5bd"/>
+    <circle cx="145" cy="148" r="20" fill="#1a1a1a"/>
+    <circle cx="145" cy="148" r="10" fill="#adb5bd"/>
+    <rect x="178" y="80" width="6" height="40" fill="#adb5bd"/>
+    <line x1="184" y1="60" x2="184" y2="120" stroke="#adb5bd" stroke-width="3"/>
+  </g>`,
+
+  police_car: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="172" rx="80" ry="6" fill="#000" opacity="0.2"/>
+    <path d="M25,140 L25,115 Q25,98 45,98 L65,98 L82,55 Q86,45 100,45 L130,45 Q146,45 155,58 L172,98 L180,103 Q185,108 185,118 L185,150 Q185,158 175,158 L165,158 A20,20 0 0,0 125,158 L80,158 A20,20 0 0,0 40,158 L30,158 Q25,158 25,148 Z" fill="#fff"/>
+    <path d="M25,98 L25,140 L100,140 L100,98 Z" fill="#1d3557"/>
+    <path d="M82,55 L72,98 H170 L160,68 L155,58 Q150,55 145,55 Z" fill="#1d3557" opacity="0.3"/>
+    <rect x="82" y="60" width="58" height="38" rx="5" fill="#a8dadc"/>
+    <rect x="80" y="30" width="40" height="18" rx="3" fill="#1d3557"/>
+    <circle cx="90" cy="39" r="6" fill="#e63946"/>
+    <circle cx="110" cy="39" r="6" fill="#3498db"/>
+    <text x="135" y="135" text-anchor="middle" fill="#1d3557" font-size="14" font-weight="bold" font-family="sans-serif">POLICE</text>
+    <circle cx="55" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="55" cy="158" r="11" fill="#adb5bd"/>
+    <circle cx="145" cy="158" r="22" fill="#1d3557"/>
+    <circle cx="145" cy="158" r="11" fill="#adb5bd"/>
+  </g>`,
+
+  plane: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="65" ry="5" fill="#000" opacity="0.15"/>
+    <path d="M30,110 Q22,100 30,90 L160,85 Q180,90 188,100 Q180,110 160,115 L40,118 Q28,118 30,110 Z" fill="#fff"/>
+    <path d="M30,110 Q22,100 30,90 L160,85 Q180,90 188,100 Q180,110 160,115 L40,118 Q28,118 30,110 Z" fill="none" stroke="#1d3557" stroke-width="2"/>
+    <path d="M50,90 L25,55 L48,55 L75,88 Z" fill="#3498db"/>
+    <path d="M50,118 L25,150 L48,148 L75,118 Z" fill="#3498db"/>
+    <path d="M165,90 L185,80 L180,98 Z" fill="#3498db"/>
+    <circle cx="60" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="80" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="100" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="120" cy="100" r="4" fill="#a8dadc"/>
+    <circle cx="140" cy="100" r="4" fill="#a8dadc"/>
+    <path d="M165,95 Q175,100 165,105 L155,103 L155,97 Z" fill="#a8dadc"/>
+    <line x1="40" y1="118" x2="60" y2="135" stroke="#1d3557" stroke-width="2"/>
+    <line x1="60" y1="118" x2="60" y2="135" stroke="#1d3557" stroke-width="2"/>
+    <circle cx="60" cy="138" r="3" fill="#1a1a1a"/>
+    <line x1="120" y1="118" x2="130" y2="135" stroke="#1d3557" stroke-width="2"/>
+    <circle cx="130" cy="138" r="3" fill="#1a1a1a"/>
+  </g>`,
+
+  helicopter: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="60" ry="5" fill="#000" opacity="0.15"/>
+    <line x1="20" y1="50" x2="180" y2="50" stroke="#1d3557" stroke-width="3"/>
+    <circle cx="100" cy="50" r="4" fill="#1d3557"/>
+    <line x1="100" y1="50" x2="100" y2="65" stroke="#1d3557" stroke-width="3"/>
+    <ellipse cx="80" cy="115" rx="60" ry="35" fill="#06d6a0"/>
+    <path d="M30,115 Q40,90 80,90 Q120,90 130,110 L130,140 Q120,150 80,150 Q40,150 30,130 Z" fill="#06d6a0"/>
+    <path d="M50,100 Q60,92 80,92 Q105,92 115,100 L115,120 Q105,128 80,128 Q60,128 50,120 Z" fill="#a8dadc"/>
+    <path d="M130,115 L175,115 L180,118 L180,128 L130,128 Z" fill="#06d6a0"/>
+    <line x1="170" y1="118" x2="180" y2="105" stroke="#1d3557" stroke-width="3"/>
+    <line x1="170" y1="128" x2="180" y2="138" stroke="#1d3557" stroke-width="3"/>
+    <ellipse cx="80" cy="155" rx="50" ry="3" fill="#1d3557"/>
+    <line x1="55" y1="150" x2="55" y2="155" stroke="#1d3557" stroke-width="3"/>
+    <line x1="105" y1="150" x2="105" y2="155" stroke="#1d3557" stroke-width="3"/>
+  </g>`,
+
+  panda: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <circle cx="50" cy="55" r="22" fill="#1a1a1a"/>
+    <circle cx="150" cy="55" r="22" fill="#1a1a1a"/>
+    <circle cx="100" cy="105" r="62" fill="#fff"/>
+    <ellipse cx="72" cy="95" rx="14" ry="18" fill="#1a1a1a"/>
+    <ellipse cx="128" cy="95" rx="14" ry="18" fill="#1a1a1a"/>
+    <circle cx="72" cy="95" r="6" fill="#fff"/>
+    <circle cx="128" cy="95" r="6" fill="#fff"/>
+    <circle cx="74" cy="93" r="3" fill="#1a1a1a"/>
+    <circle cx="130" cy="93" r="3" fill="#1a1a1a"/>
+    <ellipse cx="100" cy="125" rx="9" ry="6" fill="#1a1a1a"/>
+    <path d="M91,135 Q100,148 109,135" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M100,131 L100,138" stroke="#1a1a1a" stroke-width="2"/>
+  </g>`,
+
+  tiger: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="55" ry="5" fill="#000" opacity="0.2"/>
+    <path d="M50,80 L40,40 L72,62 Z" fill="#f4a261"/>
+    <path d="M150,80 L160,40 L128,62 Z" fill="#f4a261"/>
+    <path d="M48,40 L60,55 L52,60 Z" fill="#1a1a1a"/>
+    <path d="M152,40 L140,55 L148,60 Z" fill="#1a1a1a"/>
+    <circle cx="100" cy="110" r="58" fill="#f4a261"/>
+    <path d="M55,75 L62,95 M70,68 L75,90 M85,62 L88,86 M115,62 L112,86 M130,68 L125,90 M145,75 L138,95" stroke="#1a1a1a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="100" cy="135" rx="32" ry="20" fill="#fff5e6"/>
+    <ellipse cx="78" cy="105" rx="6" ry="9" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="105" rx="6" ry="9" fill="#1a1a1a"/>
+    <circle cx="79" cy="103" r="2" fill="#fff"/>
+    <circle cx="123" cy="103" r="2" fill="#fff"/>
+    <path d="M92,128 L100,135 L108,128 Z" fill="#1a1a1a"/>
+    <path d="M85,142 Q100,154 115,142" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="58" y1="130" x2="40" y2="130" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="142" y1="130" x2="160" y2="130" stroke="#1a1a1a" stroke-width="1.5"/>
+  </g>`,
+
+  teddy: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="50" ry="5" fill="#000" opacity="0.2"/>
+    <circle cx="55" cy="65" r="20" fill="#a0826d"/>
+    <circle cx="55" cy="65" r="11" fill="#d4a574"/>
+    <circle cx="145" cy="65" r="20" fill="#a0826d"/>
+    <circle cx="145" cy="65" r="11" fill="#d4a574"/>
+    <circle cx="100" cy="105" r="55" fill="#a0826d"/>
+    <ellipse cx="100" cy="125" rx="32" ry="25" fill="#d4a574"/>
+    <circle cx="78" cy="98" r="6" fill="#1a1a1a"/>
+    <circle cx="122" cy="98" r="6" fill="#1a1a1a"/>
+    <circle cx="80" cy="96" r="2" fill="#fff"/>
+    <circle cx="124" cy="96" r="2" fill="#fff"/>
+    <ellipse cx="100" cy="120" rx="8" ry="6" fill="#1a1a1a"/>
+    <path d="M90,130 Q100,140 110,130" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M125,150 L165,165 M125,155 L160,170" stroke="#e63946" stroke-width="2.5"/>
+    <path d="M138,148 Q145,158 153,150 Q148,165 138,160 Z" fill="#e63946"/>
+  </g>`,
+
+  // ============ 史诗 ============
+  rocket: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="40" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M100,15 Q120,40 120,80 L120,140 L80,140 L80,80 Q80,40 100,15 Z" fill="#f8f9fa"/>
+    <path d="M100,15 Q110,30 115,55 L100,55 Z" fill="#e63946"/>
+    <path d="M80,140 L60,165 L80,165 Z" fill="#e63946"/>
+    <path d="M120,140 L140,165 L120,165 Z" fill="#e63946"/>
+    <path d="M100,140 L100,170" stroke="#e63946" stroke-width="20"/>
+    <circle cx="100" cy="80" r="14" fill="#a8dadc"/>
+    <circle cx="100" cy="80" r="14" fill="none" stroke="#1d3557" stroke-width="3"/>
+    <circle cx="96" cy="76" r="5" fill="#fff" opacity="0.7"/>
+    <rect x="92" y="105" width="16" height="6" rx="1" fill="#1d3557"/>
+    <rect x="92" y="118" width="16" height="6" rx="1" fill="#1d3557"/>
+    <path d="M85,165 Q90,180 95,170 Q100,185 105,170 Q110,180 115,165" fill="#ffd60a"/>
+    <path d="M88,165 Q92,176 96,168 Q100,180 104,168 Q108,176 112,165" fill="#f97316"/>
+    <circle cx="50" cy="50" r="2" fill="#fff"/>
+    <circle cx="160" cy="80" r="2" fill="#fff"/>
+    <circle cx="40" cy="120" r="2.5" fill="#fff"/>
+    <circle cx="170" cy="140" r="2" fill="#fff"/>
+  </g>`,
+
+  robot: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="45" ry="4" fill="#000" opacity="0.25"/>
+    <line x1="100" y1="20" x2="100" y2="40" stroke="#1d3557" stroke-width="3"/>
+    <circle cx="100" cy="18" r="6" fill="#e63946"/>
+    <rect x="60" y="40" width="80" height="60" rx="8" fill="#adb5bd"/>
+    <rect x="60" y="40" width="80" height="60" rx="8" fill="url(#shine)"/>
+    <rect x="68" y="55" width="64" height="32" rx="4" fill="#1d3557"/>
+    <circle cx="82" cy="71" r="6" fill="#06d6a0"/>
+    <circle cx="118" cy="71" r="6" fill="#06d6a0"/>
+    <rect x="80" y="80" width="40" height="3" fill="#06d6a0"/>
+    <rect x="92" y="100" width="16" height="8" fill="#1d3557"/>
+    <rect x="50" y="105" width="100" height="65" rx="6" fill="#6c757d"/>
+    <rect x="50" y="105" width="100" height="65" rx="6" fill="url(#shine)"/>
+    <circle cx="100" cy="125" r="10" fill="#ffd60a"/>
+    <rect x="80" y="145" width="40" height="20" rx="3" fill="#1d3557"/>
+    <circle cx="92" cy="155" r="3" fill="#06d6a0"/>
+    <circle cx="100" cy="155" r="3" fill="#e63946"/>
+    <circle cx="108" cy="155" r="3" fill="#3498db"/>
+    <rect x="20" y="115" width="22" height="40" rx="6" fill="#adb5bd"/>
+    <rect x="158" y="115" width="22" height="40" rx="6" fill="#adb5bd"/>
+    <circle cx="31" cy="160" r="9" fill="#495057"/>
+    <circle cx="169" cy="160" r="9" fill="#495057"/>
+  </g>`,
+
+  trex: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="60" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M155,170 Q175,160 188,135 Q190,125 180,130 Q170,140 160,148 Z" fill="#52b788"/>
+    <ellipse cx="105" cy="115" rx="50" ry="40" fill="#52b788"/>
+    <path d="M58,115 Q40,75 30,55 Q35,50 50,75 Q65,95 75,108 Z" fill="#52b788"/>
+    <ellipse cx="40" cy="68" rx="22" ry="18" fill="#52b788"/>
+    <path d="M22,72 L8,75 Q20,80 32,78 Z" fill="#52b788"/>
+    <path d="M20,78 L24,75 M28,80 L32,78 M36,82 L40,80" stroke="#fff" stroke-width="2"/>
+    <path d="M22,72 L25,68 L28,72 M32,68 L35,64 L38,68" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="42" cy="62" r="4" fill="#1a1a1a"/>
+    <circle cx="43" cy="60" r="1.5" fill="#fff"/>
+    <ellipse cx="105" cy="125" rx="35" ry="20" fill="#74c69d"/>
+    <path d="M70,140 L60,180 L80,180 L88,150 Z" fill="#52b788"/>
+    <path d="M125,140 L130,180 L150,180 L140,150 Z" fill="#40916c"/>
+    <path d="M155,118 Q152,100 145,90 M150,108 Q148,95 143,88 M145,100 Q144,90 140,85" stroke="#52b788" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M58,115 Q56,108 60,103 L65,107" stroke="#40916c" stroke-width="4" fill="#52b788"/>
+  </g>`,
+
+  bronto: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="65" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M30,140 Q35,90 80,85 Q105,88 110,120 Q175,105 180,55 Q185,35 175,32 Q170,40 170,55 Q170,85 130,95 Q105,98 95,80 Q80,70 60,80 Q35,95 25,140 Z" fill="#3a86ff"/>
+    <path d="M40,140 Q40,160 50,170 L65,170 Q65,150 60,140 Z" fill="#3a86ff"/>
+    <path d="M85,140 Q85,160 95,170 L110,170 Q110,150 105,140 Z" fill="#3a86ff"/>
+    <ellipse cx="178" cy="38" rx="10" ry="8" fill="#3a86ff"/>
+    <circle cx="180" cy="35" r="2.5" fill="#1a1a1a"/>
+    <path d="M173,42 L168,45" stroke="#1a1a1a" stroke-width="2"/>
+    <path d="M28,95 Q35,90 60,90 Q90,93 95,75 Q100,65 110,68" stroke="#266dd3" stroke-width="2" fill="none" opacity="0.5"/>
+    <ellipse cx="55" cy="105" rx="3" ry="5" fill="#266dd3"/>
+    <ellipse cx="78" cy="100" rx="3" ry="5" fill="#266dd3"/>
+    <ellipse cx="105" cy="115" rx="3" ry="5" fill="#266dd3"/>
+  </g>`,
+
+  castle: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="75" ry="4" fill="#000" opacity="0.2"/>
+    <rect x="20" y="80" width="40" height="100" fill="#adb5bd"/>
+    <rect x="140" y="80" width="40" height="100" fill="#adb5bd"/>
+    <rect x="60" y="100" width="80" height="80" fill="#adb5bd"/>
+    <path d="M20,80 V72 H28 V80 M32,80 V72 H40 V80 M44,80 V72 H52 V80 M56,80 V72 H60 V80" fill="#adb5bd"/>
+    <path d="M140,80 V72 H148 V80 M152,80 V72 H160 V80 M164,80 V72 H172 V80 M176,80 V72 H180 V80" fill="#adb5bd"/>
+    <path d="M60,100 V92 H68 V100 M72,100 V92 H80 V100 M120,100 V92 H128 V100 M132,100 V92 H140 V100" fill="#adb5bd"/>
+    <path d="M40,72 L30,40 L20,72 Z" fill="#e63946"/>
+    <path d="M160,72 L150,40 L140,72 Z" fill="#e63946"/>
+    <rect x="35" y="120" width="14" height="22" fill="#1d3557"/>
+    <rect x="151" y="120" width="14" height="22" fill="#1d3557"/>
+    <rect x="85" y="135" width="30" height="45" fill="#5a2d0c"/>
+    <path d="M85,135 Q100,118 115,135" fill="#5a2d0c"/>
+    <path d="M85,135 Q100,118 115,135" fill="none" stroke="#1d3557" stroke-width="2"/>
+    <circle cx="92" cy="150" r="2" fill="#ffd60a"/>
+    <line x1="100" y1="135" x2="100" y2="180" stroke="#1d3557" stroke-width="1.5"/>
+    <line x1="20" y1="100" x2="180" y2="100" stroke="#6c757d" stroke-width="1"/>
+    <line x1="20" y1="120" x2="180" y2="120" stroke="#6c757d" stroke-width="1"/>
+    <line x1="20" y1="140" x2="180" y2="140" stroke="#6c757d" stroke-width="1"/>
+    <line x1="20" y1="160" x2="180" y2="160" stroke="#6c757d" stroke-width="1"/>
+    <path d="M30,40 L40,28 L42,32 L36,38 Z" fill="#ffd60a"/>
+    <path d="M150,40 L160,28 L162,32 L156,38 Z" fill="#ffd60a"/>
+  </g>`,
+
+  wizard: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="55" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M55,75 Q90,5 145,75 Q140,82 100,82 Q60,82 55,75 Z" fill="#3a0ca3"/>
+    <path d="M60,76 Q95,15 140,76" fill="none" stroke="#7209b7" stroke-width="2"/>
+    <circle cx="80" cy="35" r="2" fill="#ffd60a"/>
+    <circle cx="110" cy="25" r="2.5" fill="#ffd60a"/>
+    <circle cx="125" cy="50" r="2" fill="#ffd60a"/>
+    <path d="M85,30 L88,33 L91,30 L88,27 Z" fill="#ffd60a"/>
+    <ellipse cx="100" cy="100" rx="35" ry="32" fill="#fcbf49"/>
+    <circle cx="86" cy="98" r="4" fill="#1a1a1a"/>
+    <circle cx="114" cy="98" r="4" fill="#1a1a1a"/>
+    <path d="M75,108 Q80,135 90,138 Q100,140 110,138 Q120,135 125,108 L120,128 L100,135 L80,128 Z" fill="#fff"/>
+    <path d="M75,108 Q80,150 95,155 L100,135 L80,128 Z" fill="#e9ecef"/>
+    <path d="M85,82 Q90,78 95,82 M105,82 Q110,78 115,82" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+    <path d="M85,135 Q100,170 115,135" fill="#3a0ca3"/>
+    <line x1="160" y1="80" x2="180" y2="40" stroke="#5a2d0c" stroke-width="4"/>
+    <path d="M178,38 L182,42 L186,38 L188,32 L184,30 Z" fill="#ffd60a"/>
+    <circle cx="184" cy="36" r="3" fill="#fff"/>
+  </g>`,
+
+  // ============ 传说 ============
+  dragon: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="65" ry="4" fill="#000" opacity="0.2"/>
+    <path d="M30,135 Q15,100 25,75 Q35,50 60,55 Q75,30 105,40 Q140,30 160,55 Q180,75 175,100 Q185,115 178,135 L165,140 Q170,128 165,118 Q160,135 145,140 L145,165 Q140,175 130,170 L130,150 Q105,160 75,150 L75,170 Q70,175 60,170 L60,150 Q40,140 35,130 Q30,135 25,140 Z" fill="#e63946"/>
+    <path d="M30,75 L20,55 L40,68 Z" fill="#c1121f"/>
+    <path d="M170,75 L180,55 L160,68 Z" fill="#c1121f"/>
+    <path d="M50,55 Q55,30 65,30 L65,55 Z" fill="#ffd60a"/>
+    <path d="M150,55 Q145,30 135,30 L135,55 Z" fill="#ffd60a"/>
+    <path d="M75,105 Q60,90 55,75 Q70,80 80,95 Q105,85 120,95 Q130,80 145,75 Q140,90 125,105 Z" fill="#ffd60a" opacity="0.6"/>
+    <ellipse cx="78" cy="78" rx="8" ry="10" fill="#fff"/>
+    <ellipse cx="122" cy="78" rx="8" ry="10" fill="#fff"/>
+    <ellipse cx="78" cy="80" rx="4" ry="7" fill="#1a1a1a"/>
+    <ellipse cx="122" cy="80" rx="4" ry="7" fill="#1a1a1a"/>
+    <path d="M85,100 L92,108 L100,100 L108,108 L115,100" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
+    <path d="M155,135 Q175,140 188,160 Q175,170 165,160" fill="#e63946"/>
+    <path d="M165,160 Q175,170 188,160 L185,150" fill="#c1121f"/>
+    <circle cx="52" cy="105" r="3" fill="#c1121f"/>
+    <circle cx="148" cy="105" r="3" fill="#c1121f"/>
+    <circle cx="65" cy="125" r="3" fill="#c1121f"/>
+    <circle cx="135" cy="125" r="3" fill="#c1121f"/>
+    <path d="M30,80 L18,75 M30,90 L15,90 M30,100 L18,105" stroke="#c1121f" stroke-width="2" stroke-linecap="round"/>
+    <path d="M170,80 L182,75 M170,90 L185,90 M170,100 L182,105" stroke="#c1121f" stroke-width="2" stroke-linecap="round"/>
+  </g>`,
+
+  unicorn: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="55" ry="4" fill="#000" opacity="0.2"/>
+    <ellipse cx="105" cy="135" rx="55" ry="35" fill="#fff"/>
+    <ellipse cx="60" cy="105" rx="22" ry="35" fill="#fff" transform="rotate(-15 60 105)"/>
+    <path d="M50,75 L60,85 L70,75" fill="#fff"/>
+    <path d="M52,72 L48,55 L65,68 Z" fill="#ffafcc"/>
+    <path d="M52,30 L60,75 L48,75 Z" fill="#ffd60a"/>
+    <path d="M52,30 Q56,55 60,75 M48,75 Q54,55 52,30" stroke="#f4a261" stroke-width="1.5" fill="none"/>
+    <path d="M65,40 Q70,60 78,75 Q60,75 55,75 Q40,40 65,40 Z" fill="#ff6b9d"/>
+    <path d="M65,55 Q72,68 78,75 Q60,75 55,75 Q50,55 65,55 Z" fill="#3a86ff"/>
+    <path d="M65,65 Q70,72 78,75 Q60,75 58,75 Q55,65 65,65 Z" fill="#ffd60a"/>
+    <path d="M70,68 Q72,72 78,75 Q60,75 60,75 Q58,68 70,68 Z" fill="#06d6a0"/>
+    <ellipse cx="58" cy="92" rx="3.5" ry="5" fill="#1a1a1a"/>
+    <ellipse cx="59" cy="91" rx="1" ry="2" fill="#fff"/>
+    <ellipse cx="48" cy="100" rx="3" ry="2" fill="#ffafcc"/>
+    <path d="M75,160 L60,180 L75,180 Z" fill="#fff"/>
+    <path d="M95,160 L85,180 L100,180 Z" fill="#fff"/>
+    <path d="M115,160 L120,180 L135,180 Z" fill="#fff"/>
+    <path d="M135,160 L142,180 L155,180 Z" fill="#fff"/>
+    <path d="M150,135 Q175,125 175,160 Q172,170 165,165 L165,150 Q160,145 155,150 Q150,148 150,140 Z" fill="#fff"/>
+    <path d="M155,140 Q175,130 175,160 L172,160 Q165,148 160,150 Q155,148 155,140 Z" fill="#ff6b9d"/>
+    <path d="M158,145 Q173,135 175,158 L170,158 Q165,150 162,152 Q158,150 158,145 Z" fill="#3a86ff"/>
+    <path d="M162,150 Q172,142 173,156 L168,156 Q165,152 164,153 Q162,152 162,150 Z" fill="#ffd60a"/>
+  </g>`,
+
+  crown: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="180" rx="65" ry="5" fill="#000" opacity="0.25"/>
+    <path d="M25,160 L25,90 L55,55 L55,100 L80,40 L80,100 L100,30 L100,100 L120,40 L120,100 L145,55 L145,100 L175,90 L175,160 Z" fill="#ffd60a"/>
+    <path d="M25,160 L25,90 L55,55 L55,100 L80,40 L80,100 L100,30 L100,100 L120,40 L120,100 L145,55 L145,100 L175,90 L175,160 Z" fill="url(#shine)"/>
+    <path d="M25,160 L25,90 L55,55 L55,100 L80,40 L80,100 L100,30 L100,100 L120,40 L120,100 L145,55 L145,100 L175,90 L175,160 Z" fill="none" stroke="#b8860b" stroke-width="3"/>
+    <rect x="25" y="120" width="150" height="20" fill="#f4d35e"/>
+    <rect x="25" y="120" width="150" height="20" fill="none" stroke="#b8860b" stroke-width="2"/>
+    <circle cx="55" cy="55" r="8" fill="#06d6a0"/>
+    <circle cx="55" cy="55" r="8" fill="url(#shine)"/>
+    <circle cx="55" cy="55" r="8" fill="none" stroke="#1d3557" stroke-width="1.5"/>
+    <circle cx="100" cy="30" r="10" fill="#e63946"/>
+    <circle cx="100" cy="30" r="10" fill="url(#shine)"/>
+    <circle cx="100" cy="30" r="10" fill="none" stroke="#1d3557" stroke-width="1.5"/>
+    <circle cx="145" cy="55" r="8" fill="#3a86ff"/>
+    <circle cx="145" cy="55" r="8" fill="url(#shine)"/>
+    <circle cx="145" cy="55" r="8" fill="none" stroke="#1d3557" stroke-width="1.5"/>
+    <circle cx="50" cy="130" r="6" fill="#e63946"/>
+    <circle cx="80" cy="130" r="6" fill="#3a86ff"/>
+    <circle cx="100" cy="130" r="6" fill="#06d6a0"/>
+    <circle cx="120" cy="130" r="6" fill="#3a86ff"/>
+    <circle cx="150" cy="130" r="6" fill="#e63946"/>
+    <path d="M30,150 L30,158 M40,150 L40,158 M50,150 L50,158 M60,150 L60,158 M70,150 L70,158 M80,150 L80,158 M90,150 L90,158 M100,150 L100,158 M110,150 L110,158 M120,150 L120,158 M130,150 L130,158 M140,150 L140,158 M150,150 L150,158 M160,150 L160,158 M170,150 L170,158" stroke="#b8860b" stroke-width="1" opacity="0.5"/>
+  </g>`,
+
+  gem: `<g filter="url(#ds)">
+    <ellipse cx="100" cy="185" rx="50" ry="4" fill="#000" opacity="0.3"/>
+    <path d="M40,70 L80,30 L120,30 L160,70 L100,170 Z" fill="#3a86ff"/>
+    <path d="M40,70 L80,30 L100,70 Z" fill="#a8dadc"/>
+    <path d="M120,30 L160,70 L100,70 Z" fill="#1d3557"/>
+    <path d="M80,30 L120,30 L100,70 Z" fill="#7ab8e0"/>
+    <path d="M40,70 L100,70 L100,170 Z" fill="#266dd3"/>
+    <path d="M100,70 L160,70 L100,170 Z" fill="#1d3557"/>
+    <path d="M40,70 L100,70 L100,170 Z" fill="url(#shine)"/>
+    <path d="M55,75 L75,55 L80,80 Z" fill="#fff" opacity="0.6"/>
+    <path d="M105,80 L115,75 L108,90 Z" fill="#fff" opacity="0.4"/>
+    <path d="M70,140 L90,135 L75,150 Z" fill="#fff" opacity="0.3"/>
+    <circle cx="50" cy="50" r="2" fill="#fff"/>
+    <circle cx="160" cy="100" r="2.5" fill="#fff"/>
+    <circle cx="40" cy="120" r="2" fill="#fff"/>
+    <path d="M48,48 L52,48 M50,46 L50,50" stroke="#fff" stroke-width="1"/>
+    <path d="M158,98 L162,98 M160,96 L160,100" stroke="#fff" stroke-width="1"/>
+  </g>`,
+};
+
+// ============================================================
+// 包裹 SVG
+// ============================================================
+const PKG_SVGS = {
+  small: `<g filter="url(#ds)">
+    <rect x="20" y="50" width="160" height="120" rx="6" fill="#d4a373"/>
+    <rect x="20" y="50" width="160" height="120" rx="6" fill="url(#shine)"/>
+    <rect x="20" y="100" width="160" height="14" fill="#f4d35e"/>
+    <rect x="115" y="65" width="50" height="35" fill="#fff" stroke="#999" stroke-width="1"/>
+    <line x1="120" y1="73" x2="160" y2="73" stroke="#000" stroke-width="1.5"/>
+    <line x1="120" y1="80" x2="155" y2="80" stroke="#000" stroke-width="1"/>
+    <rect x="120" y="86" width="40" height="8" fill="repeating-linear-gradient(90deg,#000 0 1px, transparent 1px 2px)"/>
+  </g>`,
+  medium: `<g filter="url(#ds)">
+    <rect x="15" y="50" width="170" height="125" rx="6" fill="#ffafcc"/>
+    <rect x="15" y="50" width="170" height="125" rx="6" fill="url(#shine)"/>
+    <rect x="15" y="105" width="170" height="14" fill="#ffd60a"/>
+    <rect x="93" y="50" width="14" height="125" fill="#ffd60a"/>
+    <path d="M75,40 Q100,15 125,40 Q115,55 100,50 Q85,55 75,40 Z" fill="#e63946"/>
+    <ellipse cx="100" cy="42" rx="6" ry="8" fill="#c1121f"/>
+  </g>`,
+  big: `<g filter="url(#ds)">
+    <rect x="15" y="55" width="170" height="120" rx="8" fill="#9b5de5"/>
+    <rect x="15" y="55" width="170" height="120" rx="8" fill="url(#shine)"/>
+    <rect x="15" y="108" width="170" height="14" fill="#ffd60a"/>
+    <rect x="93" y="55" width="14" height="120" fill="#ffd60a"/>
+    <path d="M70,42 Q100,5 130,42 Q120,60 100,52 Q80,60 70,42 Z" fill="#ff006e"/>
+    <ellipse cx="100" cy="46" rx="8" ry="10" fill="#c1121f"/>
+    <circle cx="40" cy="80" r="4" fill="#ffd60a"/>
+    <circle cx="160" cy="80" r="4" fill="#ffd60a"/>
+    <circle cx="40" cy="150" r="4" fill="#ffd60a"/>
+    <circle cx="160" cy="150" r="4" fill="#ffd60a"/>
+    <path d="M30,120 L36,124 L42,120 L36,116 Z" fill="#fff"/>
+    <path d="M158,140 L164,144 L170,140 L164,136 Z" fill="#fff"/>
+  </g>`,
+  truck: `<g filter="url(#ds)">
+    <rect x="20" y="40" width="100" height="70" rx="4" fill="#fff"/>
+    <rect x="20" y="40" width="100" height="70" rx="4" fill="none" stroke="#1d3557" stroke-width="2"/>
+    <text x="70" y="80" text-anchor="middle" fill="#e63946" font-size="22" font-weight="bold" font-family="sans-serif">EXPRESS</text>
+    <rect x="120" y="55" width="50" height="55" rx="4" fill="#3498db"/>
+    <rect x="125" y="62" width="40" height="20" rx="2" fill="#a8dadc"/>
+    <rect x="130" y="65" width="32" height="14" fill="#fff" opacity="0.4"/>
+    <rect x="20" y="105" width="160" height="8" fill="#1d3557"/>
+    <circle cx="55" cy="120" r="18" fill="#1a1a1a"/>
+    <circle cx="55" cy="120" r="9" fill="#adb5bd"/>
+    <circle cx="55" cy="120" r="4" fill="#495057"/>
+    <circle cx="145" cy="120" r="18" fill="#1a1a1a"/>
+    <circle cx="145" cy="120" r="9" fill="#adb5bd"/>
+    <circle cx="145" cy="120" r="4" fill="#495057"/>
+    <circle cx="170" cy="80" r="3" fill="#ffd60a"/>
+  </g>`,
+};
+
+// ============================================================
+// 运输工具 SVG（物流地图用）
+// ============================================================
+const VEHICLE_SVGS = {
+  // 高铁子弹头
+  hsr: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="120" ry="4" fill="#000" opacity="0.2"/>
+      <path d="M0,80 Q30,55 80,52 L260,52 Q272,52 272,68 L272,120 Q272,130 260,130 L10,130 Q0,130 0,120 Z" fill="#fff"/>
+      <path d="M0,80 Q30,55 80,52 L260,52 Q272,52 272,68 L272,80 L0,80 Z" fill="#3a86ff"/>
+      <path d="M0,82 L272,82 L272,86 L0,86 Z" fill="#e63946"/>
+      <path d="M0,118 L272,118 L272,130 L10,130 Q0,130 0,120 Z" fill="#1d3557"/>
+      <rect x="40" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="72" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="104" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="136" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="168" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="200" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <rect x="232" y="92" width="22" height="20" rx="3" fill="#a8dadc"/>
+      <ellipse cx="35" cy="68" rx="20" ry="6" fill="#fff" opacity="0.6"/>
+      <circle cx="50" cy="135" r="10" fill="#1a1a1a"/>
+      <circle cx="120" cy="135" r="10" fill="#1a1a1a"/>
+      <circle cx="200" cy="135" r="10" fill="#1a1a1a"/>
+      <circle cx="20" cy="78" r="3" fill="#ffd60a"/>
+    </g>
+  </svg>`,
+
+  // 货运飞机
+  plane: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <path d="M30,80 Q20,68 30,58 L230,55 Q260,60 268,72 Q260,86 230,90 L40,90 Q28,90 30,80 Z" fill="#fff"/>
+      <path d="M30,80 Q20,68 30,58 L230,55 Q260,60 268,72 Q260,86 230,90 L40,90 Q28,90 30,80 Z" fill="none" stroke="#1d3557" stroke-width="2.5"/>
+      <rect x="50" y="62" width="140" height="14" rx="3" fill="#e63946"/>
+      <text x="120" y="74" text-anchor="middle" fill="#fff" font-size="13" font-weight="bold" font-family="sans-serif">EXPRESS ✈</text>
+      <path d="M70,58 L40,15 L60,15 L100,55 Z" fill="#3498db"/>
+      <path d="M70,90 L40,135 L60,135 L100,90 Z" fill="#3498db"/>
+      <path d="M150,58 L130,30 L145,30 L170,55 Z" fill="#3498db"/>
+      <path d="M240,58 L260,40 L255,68 Z" fill="#3498db"/>
+      <circle cx="80" cy="73" r="3" fill="#a8dadc"/>
+      <circle cx="100" cy="73" r="3" fill="#a8dadc"/>
+      <circle cx="200" cy="73" r="3" fill="#a8dadc"/>
+      <circle cx="220" cy="73" r="3" fill="#a8dadc"/>
+      <path d="M260,68 Q272,72 260,76 L250,74 L250,70 Z" fill="#a8dadc"/>
+      <ellipse cx="80" cy="65" rx="30" ry="3" fill="#fff" opacity="0.7"/>
+    </g>
+  </svg>`,
+
+  // 货车
+  truck_van: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="115" ry="4" fill="#000" opacity="0.25"/>
+      <rect x="20" y="50" width="160" height="80" rx="6" fill="#fff"/>
+      <rect x="20" y="50" width="160" height="80" rx="6" fill="none" stroke="#1d3557" stroke-width="2"/>
+      <rect x="30" y="60" width="140" height="50" fill="#e63946"/>
+      <text x="100" y="93" text-anchor="middle" fill="#fff" font-size="22" font-weight="bold" font-family="sans-serif">EXPRESS</text>
+      <rect x="180" y="65" width="70" height="65" rx="6" fill="#3498db"/>
+      <rect x="188" y="72" width="55" height="28" rx="3" fill="#a8dadc"/>
+      <rect x="192" y="76" width="47" height="20" fill="#fff" opacity="0.5"/>
+      <rect x="20" y="125" width="230" height="8" fill="#1d3557"/>
+      <circle cx="60" cy="138" r="18" fill="#1a1a1a"/>
+      <circle cx="60" cy="138" r="9" fill="#adb5bd"/>
+      <circle cx="60" cy="138" r="4" fill="#495057"/>
+      <circle cx="210" cy="138" r="18" fill="#1a1a1a"/>
+      <circle cx="210" cy="138" r="9" fill="#adb5bd"/>
+      <circle cx="210" cy="138" r="4" fill="#495057"/>
+      <circle cx="248" cy="100" r="3" fill="#ffd60a"/>
+      <rect x="22" y="104" width="20" height="6" rx="1" fill="#fff"/>
+    </g>
+  </svg>`,
+
+  // 摩托车 / 电动车
+  motorcycle: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="100" ry="4" fill="#000" opacity="0.25"/>
+      <rect x="100" y="35" width="80" height="75" rx="5" fill="#e63946"/>
+      <rect x="105" y="42" width="70" height="30" rx="2" fill="#fff"/>
+      <text x="140" y="62" text-anchor="middle" font-size="13" font-weight="bold" fill="#e63946" font-family="sans-serif">EXPRESS</text>
+      <rect x="115" y="78" width="50" height="25" rx="2" fill="#c1121f"/>
+      <text x="140" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff" font-family="sans-serif">急送</text>
+      <rect x="186" y="78" width="40" height="40" rx="3" fill="#1d3557"/>
+      <path d="M70,118 L120,90 L160,118" stroke="#1d3557" stroke-width="6" fill="none"/>
+      <path d="M186,90 L210,68 L225,80" stroke="#1d3557" stroke-width="5" fill="none"/>
+      <circle cx="210" cy="68" r="8" fill="#1d3557"/>
+      <ellipse cx="208" cy="60" rx="6" ry="8" fill="#f4a261"/>
+      <circle cx="210" cy="55" r="5" fill="#1d3557"/>
+      <rect x="115" y="118" width="60" height="8" fill="#1d3557"/>
+      <circle cx="60" cy="138" r="20" fill="#1a1a1a"/>
+      <circle cx="60" cy="138" r="11" fill="#adb5bd"/>
+      <circle cx="60" cy="138" r="5" fill="#495057"/>
+      <circle cx="210" cy="138" r="20" fill="#1a1a1a"/>
+      <circle cx="210" cy="138" r="11" fill="#adb5bd"/>
+      <circle cx="210" cy="138" r="5" fill="#495057"/>
+      <circle cx="220" cy="118" r="6" fill="#ffd60a"/>
+    </g>
+  </svg>`,
+
+  // 三轮车（货运三轮）
+  tricycle: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <ellipse cx="140" cy="148" rx="115" ry="4" fill="#000" opacity="0.25"/>
+      <rect x="120" y="40" width="130" height="85" rx="4" fill="#06d6a0"/>
+      <rect x="120" y="40" width="130" height="14" fill="#06b88c"/>
+      <rect x="128" y="58" width="115" height="55" fill="#fff"/>
+      <text x="186" y="92" text-anchor="middle" font-size="18" font-weight="bold" fill="#06d6a0" font-family="sans-serif">EXPRESS</text>
+      <text x="186" y="108" text-anchor="middle" font-size="11" fill="#06d6a0" font-family="sans-serif">送货上门</text>
+      <path d="M120,125 L80,125 L50,105" stroke="#1d3557" stroke-width="5" fill="none"/>
+      <rect x="40" y="80" width="50" height="40" rx="3" fill="#fcbf49"/>
+      <rect x="48" y="85" width="34" height="22" rx="2" fill="#a8dadc"/>
+      <rect x="50" y="87" width="30" height="18" fill="#fff" opacity="0.6"/>
+      <path d="M55,80 L65,55 L75,55 L85,80 Z" fill="#fcbf49"/>
+      <ellipse cx="70" cy="65" rx="6" ry="8" fill="#f4a261"/>
+      <circle cx="70" cy="58" r="6" fill="#1d3557"/>
+      <circle cx="55" cy="138" r="16" fill="#1a1a1a"/>
+      <circle cx="55" cy="138" r="8" fill="#adb5bd"/>
+      <circle cx="155" cy="138" r="16" fill="#1a1a1a"/>
+      <circle cx="155" cy="138" r="8" fill="#adb5bd"/>
+      <circle cx="220" cy="138" r="16" fill="#1a1a1a"/>
+      <circle cx="220" cy="138" r="8" fill="#adb5bd"/>
+      <rect x="38" y="95" width="6" height="4" fill="#fff"/>
+    </g>
+  </svg>`,
+
+  // 仓库
+  warehouse: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <rect x="20" y="50" width="240" height="90" fill="#adb5bd"/>
+      <path d="M20,50 L140,15 L260,50 Z" fill="#e63946"/>
+      <rect x="105" y="80" width="70" height="60" fill="#5a2d0c"/>
+      <rect x="105" y="80" width="70" height="60" fill="none" stroke="#1d3557" stroke-width="2"/>
+      <line x1="140" y1="80" x2="140" y2="140" stroke="#1d3557" stroke-width="2"/>
+      <text x="140" y="40" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold" font-family="sans-serif">物流中心</text>
+      <rect x="40" y="70" width="40" height="30" fill="#a8dadc"/>
+      <rect x="195" y="70" width="40" height="30" fill="#a8dadc"/>
+      <line x1="60" y1="70" x2="60" y2="100" stroke="#1d3557" stroke-width="1"/>
+      <line x1="40" y1="85" x2="80" y2="85" stroke="#1d3557" stroke-width="1"/>
+      <line x1="215" y1="70" x2="215" y2="100" stroke="#1d3557" stroke-width="1"/>
+      <line x1="195" y1="85" x2="235" y2="85" stroke="#1d3557" stroke-width="1"/>
+      <rect x="40" y="110" width="20" height="20" fill="#d4a373"/>
+      <rect x="42" y="118" width="16" height="2" fill="#f4d35e"/>
+      <rect x="65" y="115" width="20" height="20" fill="#d4a373"/>
+      <rect x="67" y="123" width="16" height="2" fill="#f4d35e"/>
+    </g>
+  </svg>`,
+
+  // 家
+  home: `<svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}
+    <g filter="url(#ds)">
+      <path d="M40,75 L140,15 L240,75 L240,140 L40,140 Z" fill="#ffd9a0"/>
+      <path d="M30,80 L140,10 L250,80 L240,80 L140,20 L40,80 Z" fill="#d65a3a"/>
+      <rect x="115" y="90" width="50" height="50" fill="#8b4513"/>
+      <circle cx="155" cy="115" r="3" fill="#ffd60a"/>
+      <rect x="55" y="90" width="40" height="35" fill="#a8dadc"/>
+      <line x1="75" y1="90" x2="75" y2="125" stroke="#5a2d0c" stroke-width="2"/>
+      <line x1="55" y1="107" x2="95" y2="107" stroke="#5a2d0c" stroke-width="2"/>
+      <rect x="185" y="90" width="40" height="35" fill="#a8dadc"/>
+      <line x1="205" y1="90" x2="205" y2="125" stroke="#5a2d0c" stroke-width="2"/>
+      <line x1="185" y1="107" x2="225" y2="107" stroke="#5a2d0c" stroke-width="2"/>
+      <text x="140" y="55" text-anchor="middle" font-size="14" fill="#fff" font-weight="bold" font-family="sans-serif">SWEET HOME</text>
+    </g>
+  </svg>`,
+};
+
+// ============================================================
+// 物流路线：城市池 + 阶段类型 + 路线模板
+// ============================================================
+const CITY_POOLS = {
+  origin: [
+    '义乌国际仓', '深圳坂田仓', '广州黄埔仓', '上海闵行中心', '杭州萧山仓',
+    '泉州晋江仓', '苏州昆山仓', '东莞松山湖仓', '宁波北仑仓', '南京江宁仓',
+    '佛山顺德仓', '成都郫都仓', '武汉黄陂仓', '青岛胶州仓', '天津武清仓',
+    '厦门海沧仓', '郑州航空港仓', '西安长安仓',
+  ],
+  hsr: [
+    '上海虹桥', '杭州东站', '南京南站', '北京南站', '广州南站', '武汉站',
+    '长沙南站', '郑州东站', '西安北站', '济南西站', '合肥南站', '南昌西站',
+    '厦门北站', '福州站', '重庆西站', '昆明南站',
+  ],
+  air: [
+    '浦东机场', '白云机场', '首都机场', '萧山机场', '双流机场', '宝安机场',
+    '咸阳机场', '禄口机场', '天府机场', '大兴机场', '高崎机场', '黄花机场',
+  ],
+  cityHub: [
+    '朝阳分拨中心', '浦东分拨中心', '天河分拨中心', '西湖分拨中心',
+    '南山分拨中心', '姑苏分拨中心', '海淀分拨中心', '徐汇分拨中心',
+    '武侯分拨中心', '锦江分拨中心', '思明分拨中心', '建邺分拨中心',
+  ],
+  district: [
+    '朝阳街道', '西湖街道', '浦东新区', '天河北片区', '南山中心区',
+    '姑苏老城区', '海淀中关村', '徐汇衡复风貌区', '武侯春熙路', '锦江九眼桥',
+    '思明环岛路', '建邺河西',
+  ],
+};
+
+// 各阶段动画时长（毫秒）—— 拉长是为了让娃多看一会儿
+// 想再慢点就调大数值；想快回原速把所有 duration 除以 ~2.8
+const STAGE_TYPES = {
+  warehouse:  { icon: '📦', vehicle: 'truck_van',  bg: 'warehouse',    duration: 4000, sound: 'whoosh' },
+  hsr:        { icon: '🚄', vehicle: 'hsr',        bg: 'countryside',  duration: 7000, sound: 'train' },
+  truck_long: { icon: '🚛', vehicle: 'truck_van',  bg: 'countryside',  duration: 5500, sound: 'truck' },
+  air:        { icon: '✈️', vehicle: 'plane',      bg: 'sky',          duration: 7500, sound: 'plane' },
+  city_hub:   { icon: '🚚', vehicle: 'truck_van',  bg: 'city',         duration: 4000, sound: 'truck' },
+  moto:       { icon: '🛵', vehicle: 'motorcycle', bg: 'suburb',       duration: 4000, sound: 'moto' },
+  tricycle:   { icon: '🛺', vehicle: 'tricycle',   bg: 'neighborhood', duration: 4000, sound: 'truck' },
+};
+
+const JOURNEY_TEMPLATES = {
+  same_city: {
+    label: '同城速达',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'city_hub',  name: '同城分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+    ],
+  },
+  same_province_truck: {
+    label: '省内陆运',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'truck_long',name: '省内干线', cityRole: 'cityHub',  verb: '运抵' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+    ],
+  },
+  cross_province_hsr: {
+    label: '高铁直送',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'hsr',       name: '高铁运输', cityRole: 'hsr',      verb: '到达' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+      { type: 'tricycle',  name: '送货上门', cityRole: null,       verb: '即将抵达' },
+    ],
+  },
+  cross_province_truck: {
+    label: '跨省陆运',
+    steps: [
+      { type: 'warehouse', name: '揽收出库',     cityRole: 'origin',   verb: '揽收于' },
+      { type: 'truck_long',name: '干线运输',     cityRole: 'hsr',      verb: '途经' },
+      { type: 'truck_long',name: '中转干线',     cityRole: 'cityHub',  verb: '运抵' },
+      { type: 'city_hub',  name: '城市分拨',     cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送',     cityRole: 'district', verb: '派送至' },
+    ],
+  },
+  long_air: {
+    label: '航空速运',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'truck_long',name: '机场转运', cityRole: 'air',      verb: '送达' },
+      { type: 'air',       name: '空运中',   cityRole: 'air',      verb: '降落于' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+      { type: 'tricycle',  name: '送货上门', cityRole: null,       verb: '即将抵达' },
+    ],
+  },
+  multi_hub: {
+    label: '多段中转',
+    steps: [
+      { type: 'warehouse', name: '揽收出库', cityRole: 'origin',   verb: '揽收于' },
+      { type: 'hsr',       name: '高铁中转', cityRole: 'hsr',      verb: '换装于' },
+      { type: 'air',       name: '空运中',   cityRole: 'air',      verb: '降落于' },
+      { type: 'city_hub',  name: '城市分拨', cityRole: 'cityHub',  verb: '抵达' },
+      { type: 'moto',      name: '小哥派送', cityRole: 'district', verb: '派送至' },
+    ],
+  },
+};
+
+const TEMPLATE_WEIGHTS = {
+  small:  { same_city: 50, same_province_truck: 25, cross_province_hsr: 15, cross_province_truck: 5,  long_air: 3,  multi_hub: 2 },
+  medium: { same_city: 12, same_province_truck: 18, cross_province_hsr: 25, cross_province_truck: 15, long_air: 18, multi_hub: 12 },
+  big:    { same_city: 3,  same_province_truck: 8,  cross_province_hsr: 20, cross_province_truck: 14, long_air: 35, multi_hub: 20 },
+};
+
+function pickFrom(arr, exclude) {
+  const pool = exclude ? arr.filter(x => x !== exclude) : arr;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function weightedPick(weights) {
+  const entries = Object.entries(weights);
+  const total = entries.reduce((s, [, w]) => s + w, 0);
+  let r = Math.random() * total;
+  for (const [k, w] of entries) {
+    if (r < w) return k;
+    r -= w;
+  }
+  return entries[0][0];
+}
+function generateTrackingNumber() {
+  const carriers = ['SF', 'YT', 'YD', 'JD', 'ST', 'ZT'];
+  const c = carriers[Math.floor(Math.random() * carriers.length)];
+  const digits = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+  return c + digits;
+}
+
+function generateJourney(boxId) {
+  const weights = TEMPLATE_WEIGHTS[boxId] || TEMPLATE_WEIGHTS.small;
+  const tplKey = weightedPick(weights);
+  const tpl = JOURNEY_TEMPLATES[tplKey];
+
+  const usedByRole = {};
+  const stages = tpl.steps.map(step => {
+    const t = STAGE_TYPES[step.type];
+    let city = '你家门口';
+    if (step.cityRole) {
+      city = pickFrom(CITY_POOLS[step.cityRole], usedByRole[step.cityRole]);
+      usedByRole[step.cityRole] = city;
+    }
+    return { ...t, name: step.name, city, verb: step.verb };
+  });
+  let prev = null;
+  for (const s of stages) { s.from = prev; prev = s.city; }
+
+  return {
+    template: tplKey,
+    label: tpl.label,
+    trackingNumber: generateTrackingNumber(),
+    origin: stages[0].city,
+    stages,
+  };
+}
+
+// ============================================================
+// 玩具数据
+// ============================================================
+const TOYS = [
+  // 普通 (10)
+  { id: 'car_red', name: '红色小汽车', rarity: 'common', svg: TOY_SVGS.car_red },
+  { id: 'car_taxi', name: '出租车', rarity: 'common', svg: TOY_SVGS.car_taxi },
+  { id: 'car_suv', name: '越野车', rarity: 'common', svg: TOY_SVGS.car_suv },
+  { id: 'ball_soccer', name: '足球', rarity: 'common', svg: TOY_SVGS.ball_soccer },
+  { id: 'ball_basketball', name: '篮球', rarity: 'common', svg: TOY_SVGS.ball_basketball },
+  { id: 'ball_tennis', name: '网球', rarity: 'common', svg: TOY_SVGS.ball_tennis },
+  { id: 'duck', name: '小黄鸭', rarity: 'common', svg: TOY_SVGS.duck },
+  { id: 'cat', name: '橘猫咪', rarity: 'common', svg: TOY_SVGS.cat },
+  { id: 'dog', name: '小棕狗', rarity: 'common', svg: TOY_SVGS.dog },
+  { id: 'blocks', name: '字母积木', rarity: 'common', svg: TOY_SVGS.blocks },
+
+  // 稀有 (7)
+  { id: 'racecar', name: 'F1赛车', rarity: 'rare', svg: TOY_SVGS.racecar },
+  { id: 'fire_truck', name: '消防车', rarity: 'rare', svg: TOY_SVGS.fire_truck },
+  { id: 'police_car', name: '警车', rarity: 'rare', svg: TOY_SVGS.police_car },
+  { id: 'plane', name: '客机', rarity: 'rare', svg: TOY_SVGS.plane },
+  { id: 'helicopter', name: '直升机', rarity: 'rare', svg: TOY_SVGS.helicopter },
+  { id: 'panda', name: '熊猫宝宝', rarity: 'rare', svg: TOY_SVGS.panda },
+  { id: 'tiger', name: '小老虎', rarity: 'rare', svg: TOY_SVGS.tiger },
+  { id: 'teddy', name: '泰迪熊', rarity: 'rare', svg: TOY_SVGS.teddy },
+
+  // 史诗 (5)
+  { id: 'rocket', name: '太空火箭', rarity: 'epic', svg: TOY_SVGS.rocket },
+  { id: 'robot', name: '机器人战士', rarity: 'epic', svg: TOY_SVGS.robot },
+  { id: 'trex', name: '霸王龙', rarity: 'epic', svg: TOY_SVGS.trex },
+  { id: 'bronto', name: '蓝鲸龙', rarity: 'epic', svg: TOY_SVGS.bronto },
+  { id: 'castle', name: '巨人城堡', rarity: 'epic', svg: TOY_SVGS.castle },
+  { id: 'wizard', name: '小魔法师', rarity: 'epic', svg: TOY_SVGS.wizard },
+
+  // 传说 (4)
+  { id: 'dragon', name: '神龙', rarity: 'legendary', svg: TOY_SVGS.dragon },
+  { id: 'unicorn', name: '彩虹独角兽', rarity: 'legendary', svg: TOY_SVGS.unicorn },
+  { id: 'crown', name: '黄金王冠', rarity: 'legendary', svg: TOY_SVGS.crown },
+  { id: 'gem', name: '蓝宝石', rarity: 'legendary', svg: TOY_SVGS.gem },
+];
+
+const RARITY_INFO = {
+  common:    { name: '普通', class: 'rarity-common',    coins: 5 },
+  rare:      { name: '稀有', class: 'rarity-rare',      coins: 15 },
+  epic:      { name: '史诗', class: 'rarity-epic',      coins: 40 },
+  legendary: { name: '传说', class: 'rarity-legendary', coins: 100 },
+};
+
+const BOXES = [
+  { id: 'small',   name: '小快递',  cost: 0,  pkg: PKG_SVGS.small,  bonus: { common: 65, rare: 25, epic: 9,  legendary: 1 } },
+  { id: 'medium',  name: '惊喜盒',  cost: 30, pkg: PKG_SVGS.medium, bonus: { common: 40, rare: 35, epic: 20, legendary: 5 } },
+  { id: 'big',     name: '豪华箱',  cost: 80, pkg: PKG_SVGS.big,    bonus: { common: 20, rare: 35, epic: 30, legendary: 15 } },
+];
+
+function svgWrap(content) {
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${SVG_DEFS}${content}</svg>`;
+}
+
+// ============================================================
+// 状态 + 持久化
+// ============================================================
+const STORAGE_KEY = 'zucker-game-save-v2';
+let state = { coins: 20, collection: {}, firstAt: {}, muted: false };
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const obj = JSON.parse(saved);
+      state.coins = obj.coins ?? 20;
+      state.collection = obj.collection ?? {};
+      state.firstAt = obj.firstAt ?? {};
+      state.muted = obj.muted ?? false;
+    }
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// ============================================================
+// 音效
+// ============================================================
+let audioCtx = null;
+function getCtx() {
+  if (state.muted) return null;
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function vibrate(pattern) {
+  if (state.muted) return;
+  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch(e) {} }
+}
+function playTone(freq, duration, type='sine', volume=0.2) {
+  const ctx = getCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + duration);
+}
+const SFX = {
+  doorbell: () => { playTone(880, 0.15, 'sine'); setTimeout(()=>playTone(660, 0.3, 'sine'), 150); },
+  cut: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(3000, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.4);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.4);
+  },
+  pop: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800 + Math.random()*200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.1);
+  },
+  reveal: (rarity) => {
+    if (rarity === 'legendary') {
+      [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playTone(f, 0.3, 'triangle', 0.25), i*120));
+    } else if (rarity === 'epic') {
+      [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.2, 'triangle', 0.22), i*100));
+    } else if (rarity === 'rare') {
+      [523, 659, 784].forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'triangle', 0.2), i*90));
+    } else {
+      playTone(523, 0.15, 'triangle', 0.2);
+      setTimeout(() => playTone(784, 0.2, 'triangle', 0.2), 100);
+    }
+  },
+  coin: () => {
+    playTone(987, 0.08, 'square', 0.12);
+    setTimeout(() => playTone(1318, 0.12, 'square', 0.12), 60);
+  },
+  whoosh: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(100, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.3);
+  },
+  truck: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, ctx.currentTime);
+    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.5);
+  },
+  train: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    // 高铁滑过的呼啸声
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 1.2);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.5);
+    // 高音叮咚
+    setTimeout(() => playTone(1200, 0.1, 'sine', 0.1), 200);
+    setTimeout(() => playTone(900, 0.15, 'sine', 0.1), 350);
+  },
+  plane: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.5);
+    osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 1.6);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.7);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.7);
+  },
+  moto: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    // 摩托车突突突
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => playTone(180 + Math.random()*60, 0.06, 'square', 0.08), i * 120);
+    }
+  },
+  ding: () => {
+    playTone(1200, 0.15, 'sine', 0.18);
+    setTimeout(() => playTone(1600, 0.2, 'sine', 0.15), 80);
+  },
+  elevBeep: () => {
+    playTone(1200, 0.06, 'square', 0.18);
+  },
+  elevTick: () => {
+    playTone(680, 0.05, 'sine', 0.12);
+  },
+  elevDing: () => {
+    playTone(1320, 0.18, 'sine', 0.2);
+    setTimeout(() => playTone(990, 0.32, 'sine', 0.18), 200);
+  },
+  elevDoor: () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1.2);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 1.2);
+  },
+};
+
+// ============================================================
+// DOM
+// ============================================================
+const $ = id => document.getElementById(id);
+const sceneDoor = $('sceneDoor');
+const sceneMap = $('sceneMap');
+const sceneElevator = $('sceneElevator');
+const sceneUnbox = $('sceneUnbox');
+const sceneReveal = $('sceneReveal');
+
+function showScene(scene) {
+  [sceneDoor, sceneMap, sceneElevator, sceneUnbox, sceneReveal].forEach(s => s.classList.add('hidden'));
+  scene.classList.remove('hidden');
+}
+
+// ============================================================
+// 电梯：选楼层 + 选房号
+// ============================================================
+let currentApartment = 88;  // 默认门牌
+
+const TOTAL_FLOORS = 33;
+
+function selectFloor() {
+  const panel = $('elevPanel');
+  $('elevPanelTitle').textContent = '🛗 请选择楼层 (1-' + TOTAL_FLOORS + ')';
+  panel.classList.remove('hiding');
+  const buttonsEl = $('elevButtons');
+  buttonsEl.innerHTML = '';
+  buttonsEl.className = 'elev-buttons elev-buttons-floors';
+  return new Promise(resolve => {
+    for (let f = 1; f <= TOTAL_FLOORS; f++) {
+      const btn = document.createElement('button');
+      btn.className = 'elev-btn elev-btn-small';
+      btn.textContent = f;
+      btn.onclick = () => {
+        if (btn.classList.contains('pressed')) return;
+        buttonsEl.querySelectorAll('.elev-btn').forEach(b => b.classList.remove('pressed'));
+        btn.classList.add('pressed');
+        SFX.elevBeep();
+        // 让用户看一眼按钮亮起再切场景
+        setTimeout(() => {
+          panel.classList.add('hiding');
+          resolve(f);
+        }, 700);
+      };
+      buttonsEl.appendChild(btn);
+    }
+  });
+}
+
+async function playAscent(targetFloor) {
+  $('elevArrow').classList.remove('idle');
+  $('elevDoors').classList.add('shaking');
+  document.querySelector('.elev-mirror').classList.add('shaking');
+  SFX.elevDoor();
+
+  // 楼层多就跳快点，少就跳慢点；总时长 4.5-7s 之间
+  const climb = targetFloor - 1;
+  let tickEvery;
+  if (climb <= 0) tickEvery = 0;
+  else if (climb <= 5) tickEvery = 500;          // 1-5 楼：每层 500ms
+  else if (climb <= 12) tickEvery = 320;         // 6-12 楼：每层 320ms
+  else if (climb <= 22) tickEvery = 220;         // 13-22 楼：每层 220ms
+  else tickEvery = 170;                          // 23-33 楼：每层 170ms
+
+  return new Promise(resolve => {
+    let current = 1;
+    $('elevDisplayNum').textContent = current;
+    if (current === targetFloor) {
+      // 已经在 1 楼，直接到达
+      $('elevDoors').classList.remove('shaking');
+      document.querySelector('.elev-mirror').classList.remove('shaking');
+      $('elevArrow').classList.add('idle');
+      SFX.elevDing();
+      setTimeout(resolve, 400);
+      return;
+    }
+    const tick = setInterval(() => {
+      current++;
+      $('elevDisplayNum').textContent = current;
+      // 长行程时音效稀疏：每 3 层响一次 + 临近目标 3 层响
+      const playSound = climb <= 8
+        || current % 3 === 0
+        || targetFloor - current <= 2;
+      if (current === targetFloor) {
+        clearInterval(tick);
+        setTimeout(() => {
+          $('elevDoors').classList.remove('shaking');
+          document.querySelector('.elev-mirror').classList.remove('shaking');
+          $('elevArrow').classList.add('idle');
+          SFX.elevDing();
+          resolve();
+        }, 400);
+      } else if (playSound) {
+        SFX.elevTick();
+      }
+    }, tickEvery);
+  });
+}
+
+function renderApartmentDoors(floor) {
+  const doors = $('hallwayDoors');
+  doors.innerHTML = '';
+  // 4 个房间：floor*100 + 01..04
+  const rooms = [1, 2, 3, 4];
+  rooms.forEach(r => {
+    const num = floor * 100 + r;
+    const door = document.createElement('div');
+    door.className = 'apt-door';
+    door.dataset.room = r;
+    door.dataset.num = num;
+    door.innerHTML = `
+      <div class="apt-door-num">${num}</div>
+      <div class="apt-door-knob"></div>
+    `;
+    doors.appendChild(door);
+  });
+}
+
+function selectApartment(floor) {
+  return new Promise(resolve => {
+    $('hallwayDoors').querySelectorAll('.apt-door').forEach(door => {
+      door.onclick = () => {
+        if (door.classList.contains('selected')) return;
+        $('hallwayDoors').querySelectorAll('.apt-door').forEach(d => d.classList.remove('selected'));
+        door.classList.add('selected');
+        SFX.elevBeep();
+        setTimeout(() => SFX.ding(), 250);
+        const num = parseInt(door.dataset.num, 10);
+        setTimeout(() => resolve(num), 1100);
+      };
+    });
+  });
+}
+
+async function playElevator() {
+  showScene(sceneElevator);
+  // 重置状态
+  $('elevDoors').classList.remove('open');
+  $('elevDoors').classList.remove('shaking');
+  $('elevArrow').classList.add('idle');
+  $('elevDisplayNum').textContent = '1';
+  $('elevPanel').classList.remove('hiding');
+  $('hallwayDoors').innerHTML = '';
+  $('deliveryMsg').classList.add('hidden');
+
+  // 阶段 1：选楼层
+  $('elevTitle').textContent = '🛗 电梯';
+  const floor = await selectFloor();
+
+  // 阶段 2：上升
+  await new Promise(r => setTimeout(r, 300));
+  await playAscent(floor);
+
+  // 阶段 3：开门 → 显示走廊
+  renderApartmentDoors(floor);
+  $('elevDoors').classList.add('open');
+  SFX.elevDoor();
+  await new Promise(r => setTimeout(r, 1400));
+
+  // 阶段 4：选房号
+  $('elevPanelTitle').textContent = `🚪 ${floor} 楼，选个家吧`;
+  $('elevPanel').classList.remove('hiding');
+  // 清空选择面板（这次不用按钮，让用户直接点门）
+  $('elevButtons').innerHTML = '';
+  // 实际还是用 panel 显示提示，房号选择走廊里的门
+  setTimeout(() => $('elevPanel').classList.add('hiding'), 1400);
+
+  const apartmentNum = await selectApartment(floor);
+  currentApartment = apartmentNum;
+
+  // 阶段 5：派送提示
+  const msg = $('deliveryMsg');
+  msg.textContent = `📦 派送至 ${apartmentNum} 号 ...`;
+  msg.classList.remove('hidden');
+  await new Promise(r => setTimeout(r, 1200));
+  msg.classList.add('hidden');
+
+  arriveAtDoor();
+}
+
+function updateTopbar() {
+  $('coinCount').textContent = state.coins;
+  $('collectionCount').textContent = Object.keys(state.collection).length;
+  $('collectionTotal').textContent = TOYS.length;
+}
+
+// ============================================================
+// 物流地图动画
+// ============================================================
+function buildMapDecor(stage) {
+  const decor = $('mapDecor');
+  decor.innerHTML = '';
+  const bg = stage.bg;
+
+  // 通用云朵（除了仓库内）
+  if (bg !== 'warehouse') {
+    decor.innerHTML += `<div class="cloud cloud-1"></div><div class="cloud cloud-2"></div><div class="cloud cloud-3"></div>`;
+  }
+
+  if (bg === 'countryside') {
+    decor.innerHTML += `
+      <div class="grass-field"></div>
+      <div class="ground-track"></div>
+      <div class="mountain mountain-1"></div>
+      <div class="mountain mountain-2"></div>
+      <div class="mountain mountain-3"></div>
+    `;
+  } else if (bg === 'sky') {
+    decor.innerHTML += `
+      <div class="grass-field" style="opacity:0.4"></div>
+      <div class="mountain mountain-1" style="opacity:0.5"></div>
+      <div class="mountain mountain-3" style="opacity:0.5"></div>
+    `;
+  } else if (bg === 'city') {
+    decor.innerHTML += `
+      <div class="building-skyline"></div>
+      <div class="ground-road"></div>
+    `;
+  } else if (bg === 'suburb' || bg === 'neighborhood') {
+    decor.innerHTML += `<div class="ground-road"></div>`;
+    if (bg === 'neighborhood') {
+      // 显示终点的家
+      const home = document.createElement('div');
+      home.className = 'home-target';
+      home.innerHTML = VEHICLE_SVGS.home;
+      decor.appendChild(home);
+    }
+  } else if (bg === 'warehouse') {
+    decor.innerHTML += `
+      <div class="ground-road"></div>
+    `;
+    // 把仓库本身放在背景里
+    const wh = document.createElement('div');
+    wh.style.cssText = 'position:absolute; left:5%; bottom:30%; width:280px; height:160px; opacity:0.95; z-index:2;';
+    wh.innerHTML = VEHICLE_SVGS.warehouse;
+    decor.appendChild(wh);
+  }
+}
+
+function buildMapProgress(currentIdx, stages) {
+  const progress = $('mapProgress');
+  progress.innerHTML = '';
+  const dots = [
+    { icon: '📦' },
+    ...stages.map(s => ({ icon: s.icon })),
+    { icon: '🏠' },
+  ];
+  dots.forEach((d, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'map-progress-dot';
+    if (i < currentIdx + 1) dot.classList.add('done');
+    else if (i === currentIdx + 1) dot.classList.add('active');
+    dot.textContent = d.icon;
+    progress.appendChild(dot);
+  });
+}
+
+let currentJourney = null;
+
+function fmtSimTime(date) {
+  return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+}
+
+function appendTrackingLog(icon, time, text) {
+  const log = $('trackingLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${time}</span><span class="log-icon">${icon}</span><span class="log-text">${text}</span>`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showCheckpointToast(text) {
+  const t = $('checkpointToast');
+  t.textContent = text;
+  t.classList.remove('show');
+  void t.offsetWidth;
+  t.classList.add('show');
+}
+
+function describeStage(stage) {
+  if (stage.city === '你家门口') return `${stage.icon} ${stage.name} · 即将到家`;
+  if (stage.from && stage.from !== stage.city) return `${stage.icon} ${stage.name} · ${stage.from} → ${stage.city}`;
+  return `${stage.icon} ${stage.name} · ${stage.city}`;
+}
+
+// ============================================================
+// 静态地图（陆地/海洋/山脉/森林）
+// ============================================================
+function buildStaticMap() {
+  const staticG = document.getElementById('mapStatic');
+  if (!staticG || staticG.dataset.built) return;
+  let html = '';
+
+  // 海面
+  html += `<rect width="1000" height="600" fill="url(#seaGrad)"/>`;
+
+  // 海面波纹
+  const waveSeed = [
+    [80,140],[220,90],[380,110],[540,90],[700,130],[860,100],
+    [60,540],[260,560],[460,580],[660,560],[860,540],
+    [40,310],[960,260],[40,420],[960,420]
+  ];
+  for (const [x,y] of waveSeed) {
+    html += `<path d="M${x},${y} q15,-5 30,0 t30,0" stroke="#fff" stroke-width="2" fill="none" opacity="0.5"/>`;
+  }
+
+  // 大陆主体
+  html += `<path d="M-10,90 Q120,40 240,70 Q360,90 480,60 Q600,40 720,80 Q860,110 1010,90 L1010,520 Q900,560 760,540 Q620,520 460,550 Q300,570 140,545 Q60,535 -10,520 Z" fill="url(#landGrad)" filter="url(#mapShadow)"/>`;
+
+  // 海岸线纹理
+  html += `<path d="M-10,90 Q120,40 240,70 Q360,90 480,60 Q600,40 720,80 Q860,110 1010,90" stroke="#c9b378" stroke-width="2" fill="none" opacity="0.5"/>`;
+  html += `<path d="M-10,520 Q140,545 300,570 Q460,550 620,520 Q760,540 900,560 Q960,540 1010,520" stroke="#c9b378" stroke-width="2" fill="none" opacity="0.5"/>`;
+
+  // 河流
+  html += `<path d="M120,140 Q150,250 130,360 Q115,450 90,540" stroke="#7ab8d4" stroke-width="6" fill="none" opacity="0.65" stroke-linecap="round"/>`;
+  html += `<path d="M120,140 Q150,250 130,360 Q115,450 90,540" stroke="#a8dadc" stroke-width="3" fill="none" opacity="0.7" stroke-linecap="round"/>`;
+  html += `<path d="M650,90 Q620,150 590,220 Q570,260 540,290" stroke="#7ab8d4" stroke-width="5" fill="none" opacity="0.65" stroke-linecap="round"/>`;
+  html += `<path d="M650,90 Q620,150 590,220 Q570,260 540,290" stroke="#a8dadc" stroke-width="2.5" fill="none" opacity="0.7" stroke-linecap="round"/>`;
+
+  // 山脉
+  const mountainGroups = [
+    { x: 280, y: 320 }, { x: 590, y: 360 }, { x: 880, y: 200 },
+  ];
+  for (const m of mountainGroups) {
+    html += `<g>
+      <path d="M${m.x},${m.y+50} L${m.x+35},${m.y-15} L${m.x+70},${m.y+50} Z" fill="#a98467" stroke="#7d5e44" stroke-width="1.5"/>
+      <path d="M${m.x+30},${m.y+50} L${m.x+65},${m.y-30} L${m.x+100},${m.y+50} Z" fill="#937358" stroke="#7d5e44" stroke-width="1.5"/>
+      <path d="M${m.x+55},${m.y+50} L${m.x+85},${m.y+5} L${m.x+115},${m.y+50} Z" fill="#a98467" stroke="#7d5e44" stroke-width="1.5"/>
+      <path d="M${m.x+35},${m.y-15} L${m.x+45},${m.y-2} L${m.x+25},${m.y-2} Z" fill="#fff" opacity="0.9"/>
+      <path d="M${m.x+65},${m.y-30} L${m.x+78},${m.y-12} L${m.x+52},${m.y-12} Z" fill="#fff" opacity="0.9"/>
+    </g>`;
+  }
+
+  // 森林
+  const forestSpots = [
+    { x: 150, y: 230, n: 9 }, { x: 470, y: 360, n: 11 }, { x: 760, y: 480, n: 8 },
+    { x: 350, y: 460, n: 10 }, { x: 880, y: 320, n: 7 },
+  ];
+  for (const f of forestSpots) {
+    for (let i = 0; i < f.n; i++) {
+      const dx = (Math.random() - 0.5) * 70;
+      const dy = (Math.random() - 0.5) * 30;
+      const r = 5 + Math.random() * 4;
+      const colors = ['#52b788', '#74c69d', '#40916c', '#2d6a4f'];
+      const color = colors[Math.floor(Math.random()*colors.length)];
+      html += `<circle cx="${f.x+dx}" cy="${f.y+dy}" r="${r}" fill="${color}"/>`;
+    }
+  }
+
+  // 装饰小城市
+  const decorCities = [
+    { x: 100, y: 165 }, { x: 850, y: 130 }, { x: 600, y: 460 },
+  ];
+  for (const c of decorCities) {
+    html += `<g transform="translate(${c.x},${c.y})">
+      <rect x="-2" y="-22" width="9" height="22" fill="#6c757d"/>
+      <rect x="9" y="-32" width="9" height="32" fill="#495057"/>
+      <rect x="20" y="-18" width="9" height="18" fill="#6c757d"/>
+      <rect x="31" y="-28" width="9" height="28" fill="#495057"/>
+      <rect x="42" y="-15" width="9" height="15" fill="#6c757d"/>
+      <rect x="0" y="-18" width="2" height="2" fill="#ffd60a"/>
+      <rect x="11" y="-25" width="2" height="2" fill="#ffd60a"/>
+      <rect x="33" y="-22" width="2" height="2" fill="#ffd60a"/>
+    </g>`;
+  }
+
+  // 云朵
+  const clouds = [{ x: 130, y: 100 }, { x: 450, y: 70 }, { x: 770, y: 120 }];
+  for (const c of clouds) {
+    html += `<g transform="translate(${c.x},${c.y})" opacity="0.85">
+      <ellipse cx="0" cy="0" rx="35" ry="10" fill="#fff"/>
+      <circle cx="-12" cy="-6" r="14" fill="#fff"/>
+      <circle cx="6" cy="-9" r="16" fill="#fff"/>
+      <circle cx="22" cy="-4" r="11" fill="#fff"/>
+    </g>`;
+  }
+
+  // 指北针
+  html += `<g transform="translate(940, 80)">
+    <circle r="32" fill="rgba(255,255,255,0.92)" stroke="#1d3557" stroke-width="2.5" filter="url(#mapShadow)"/>
+    <path d="M0,-26 L5,0 L0,26 L-5,0 Z" fill="#e63946"/>
+    <path d="M-26,0 L0,5 L26,0 L0,-5 Z" fill="#1d3557" opacity="0.4"/>
+    <text y="-36" text-anchor="middle" font-size="14" font-weight="bold" fill="#1d3557" font-family="sans-serif">N</text>
+  </g>`;
+
+  // 比例尺
+  html += `<g transform="translate(60, 560)">
+    <rect x="0" y="-2" width="120" height="4" fill="#1d3557"/>
+    <rect x="0" y="-2" width="40" height="4" fill="#fff" stroke="#1d3557" stroke-width="0.5"/>
+    <rect x="80" y="-2" width="40" height="4" fill="#fff" stroke="#1d3557" stroke-width="0.5"/>
+    <text x="60" y="-8" text-anchor="middle" font-size="11" fill="#1d3557" font-family="sans-serif">2000 km</text>
+  </g>`;
+
+  staticG.innerHTML = html;
+  staticG.dataset.built = '1';
+}
+
+// 阶段类型 → 在地图上的相对位置（0~1，沿弧形分布）
+const STAGE_TYPE_LANE = {
+  warehouse:  { lane: 'low' },   // 起点附近
+  truck_long: { lane: 'mid' },   // 干线运输中
+  hsr:        { lane: 'mid' },
+  air:        { lane: 'high' },  // 空中
+  city_hub:   { lane: 'mid' },
+  moto:       { lane: 'low' },   // 接近终点
+  tricycle:   { lane: 'low' },
+};
+
+// 根据 stages 生成路径上的坐标点（N+1 点：N 段 + 终点家）
+function buildJourneyWaypoints(stages) {
+  const N = stages.length;
+  const total = N + 1;
+  const points = [];
+  // 起点 + 各阶段终点 + 家
+  // x 从 80 到 920 等距分布
+  // y 用正弦波让中段抬高（"飞行"段尤其高）
+  for (let i = 0; i < total; i++) {
+    const t = total === 1 ? 0 : i / (total - 1);
+    const x = 80 + t * 840;
+    let baseY = 470;
+    let arch = 0;
+    if (i < N) {
+      // 站点对应阶段类型
+      const typeKey = stages[i].name.includes('空运') ? 'air'
+        : stages[i].name.includes('高铁') ? 'hsr'
+        : stages[i].vehicle === 'plane' ? 'air'
+        : stages[i].vehicle === 'hsr' ? 'hsr'
+        : null;
+      if (typeKey === 'air') arch = 280;
+      else if (typeKey === 'hsr') arch = 200;
+      else arch = 230 * Math.sin(t * Math.PI);
+    } else {
+      // 终点（家）固定低位
+      arch = 0;
+    }
+    // 综合：让中间高，两边低
+    const y = i === 0 || i === total - 1
+      ? baseY
+      : baseY - Math.max(arch, 230 * Math.sin(t * Math.PI));
+    points.push({ x, y });
+  }
+  return points;
+}
+
+function pathDFromPoints(points) {
+  if (points.length < 2) return '';
+  let d = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+  // 用 Q 曲线让线条更柔顺
+  for (let i = 1; i < points.length; i++) {
+    const p0 = points[i-1];
+    const p1 = points[i];
+    const cx = (p0.x + p1.x) / 2;
+    const cy = Math.min(p0.y, p1.y) - 12;
+    d += ` Q ${cx.toFixed(1)},${cy.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+function renderWaypoints(points, stages) {
+  const wpEl = document.getElementById('waypoints');
+  let wpHtml = '';
+  points.forEach((p, i) => {
+    const isLast = i === points.length - 1;
+    const stage = i < stages.length ? stages[i] : null;
+    const icon = isLast ? '🏠' : stage.icon;
+    const label = isLast ? '你家' : (stage.city || '中转');
+    const labelW = Math.min(180, Math.max(60, label.length * 14 + 14));
+    wpHtml += `<g class="waypoint" data-idx="${i}" transform="translate(${p.x},${p.y})">`;
+    wpHtml += `<circle r="22" fill="#fff" stroke="#1d3557" stroke-width="2.5" filter="url(#dotShadow)"/>`;
+    wpHtml += `<text text-anchor="middle" dominant-baseline="central" font-size="20" font-family="sans-serif">${icon}</text>`;
+    wpHtml += `<rect x="${-labelW/2}" y="28" width="${labelW}" height="20" rx="10" fill="#1d3557"/>`;
+    wpHtml += `<text text-anchor="middle" y="42" font-size="11" font-weight="bold" fill="#fff" font-family="sans-serif">${label}</text>`;
+    wpHtml += `</g>`;
+  });
+  wpEl.innerHTML = wpHtml;
+}
+
+function highlightWaypoint(idx) {
+  document.querySelectorAll('#waypoints .waypoint').forEach((g, i) => {
+    const circle = g.querySelector('circle');
+    if (i <= idx) {
+      circle.setAttribute('fill', '#06d6a0');
+      circle.setAttribute('stroke', '#02856b');
+    } else {
+      circle.setAttribute('fill', '#fff');
+      circle.setAttribute('stroke', '#1d3557');
+    }
+  });
+}
+
+async function playJourney() {
+  showScene(sceneMap);
+  buildStaticMap();
+
+  const journey = generateJourney(currentBox.id);
+  currentJourney = journey;
+
+  // 路径与站点
+  const points = buildJourneyWaypoints(journey.stages);
+  const pathD = pathDFromPoints(points);
+  ['routePath', 'routeBg', 'routeShadow'].forEach(id => {
+    document.getElementById(id).setAttribute('d', pathD);
+  });
+  renderWaypoints(points, journey.stages);
+  highlightWaypoint(-1);
+
+  // 模拟时间
+  const simBase = new Date(Date.now() - (4 + Math.random() * 8) * 3600 * 1000);
+  let simCursor = simBase.getTime();
+
+  $('trackingNum').textContent = journey.trackingNumber;
+  $('trackingFrom').textContent = journey.origin;
+  $('trackingLabel').textContent = journey.label;
+  $('trackingLog').innerHTML = '';
+  $('trackingCurrent').textContent = `${fmtSimTime(simBase)} 已下单 · 等待揽收`;
+  appendTrackingLog('📝', fmtSimTime(simBase), `订单已生成 · ${journey.label}`);
+
+  buildMapProgress(-1, journey.stages);
+
+  // 移动包裹
+  const movingPkg = document.getElementById('movingPkg');
+  const pkgEmoji = document.getElementById('pkgEmoji');
+  movingPkg.setAttribute('transform', `translate(${points[0].x},${points[0].y})`);
+  pkgEmoji.textContent = journey.stages[0].icon;
+
+  // 阶段时间表
+  const stageStartTimes = [0];
+  for (let i = 0; i < journey.stages.length; i++) {
+    stageStartTimes.push(stageStartTimes[i] + journey.stages[i].duration);
+  }
+  const totalDuration = stageStartTimes[journey.stages.length];
+
+  return new Promise(resolve => {
+    const startTime = performance.now();
+    let lastStage = -1;
+
+    function frame(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed, totalDuration);
+
+      // 当前阶段
+      let stageIdx = journey.stages.length - 1;
+      for (let i = 0; i < journey.stages.length; i++) {
+        if (t < stageStartTimes[i+1]) { stageIdx = i; break; }
+      }
+
+      // 段内插值（线性）
+      const segElapsed = t - stageStartTimes[stageIdx];
+      const segProgress = Math.min(segElapsed / journey.stages[stageIdx].duration, 1);
+      const p0 = points[stageIdx];
+      const p1 = points[stageIdx + 1];
+      // 用三次缓动让起步停止顺滑
+      const eased = segProgress < 0.5
+        ? 2 * segProgress * segProgress
+        : 1 - Math.pow(-2 * segProgress + 2, 2) / 2;
+      const x = p0.x + (p1.x - p0.x) * eased;
+      const y = p0.y + (p1.y - p0.y) * eased;
+      movingPkg.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+
+      // 阶段切换
+      if (stageIdx !== lastStage) {
+        const s = journey.stages[stageIdx];
+        pkgEmoji.textContent = s.icon;
+        $('trackingCurrent').textContent = describeStage(s);
+        if (SFX[s.sound]) SFX[s.sound]();
+        buildMapProgress(stageIdx, journey.stages);
+        highlightWaypoint(stageIdx);
+
+        // 上一段完成日志
+        if (lastStage >= 0) {
+          simCursor += (30 + Math.random() * 60) * 60 * 1000;
+          const stamp = fmtSimTime(new Date(simCursor));
+          const prev = journey.stages[lastStage];
+          const logText = prev.city === '你家门口'
+            ? '即将抵达 · 你家门口'
+            : `${prev.verb} ${prev.city}`;
+          appendTrackingLog(prev.icon, stamp, logText);
+          showCheckpointToast(prev.city === '你家门口'
+            ? '✓ 即将到家'
+            : `✓ 已抵达 ${prev.city}`);
+        }
+        lastStage = stageIdx;
+      }
+
+      if (t < totalDuration) {
+        requestAnimationFrame(frame);
+      } else {
+        // 终点
+        const lastS = journey.stages[journey.stages.length - 1];
+        simCursor += (30 + Math.random() * 60) * 60 * 1000;
+        const stamp = fmtSimTime(new Date(simCursor));
+        const logText = lastS.city === '你家门口'
+          ? '即将抵达 · 你家门口'
+          : `${lastS.verb} ${lastS.city}`;
+        appendTrackingLog(lastS.icon, stamp, logText);
+        showCheckpointToast('✓ 即将到家');
+
+        buildMapProgress(journey.stages.length, journey.stages);
+        highlightWaypoint(points.length - 1);
+        $('trackingCurrent').textContent = '🏠 已到楼下 · 准备上楼';
+        setTimeout(() => {
+          playElevator();
+          resolve();
+        }, 600);
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function arriveAtDoor() {
+  showScene(sceneDoor);
+  $('truck').style.display = 'none';
+  $('shopRow').style.display = 'none';
+  // 把房子门牌号刷成电梯里选的房号
+  const doorNum = $('doorNumberText');
+  if (doorNum) doorNum.textContent = String(currentApartment);
+  $('packageDoor').innerHTML = svgWrap(currentBox.pkg);
+  $('packageDoor').style.display = 'block';
+  $('doorHint').style.display = 'block';
+  $('doorTitle').textContent = `快递到 ${currentApartment} 号啦！🎉`;
+  SFX.doorbell();
+  setTimeout(() => SFX.ding(), 400);
+}
+
+// ============================================================
+// 拆箱流程
+// ============================================================
+let currentBox = null;
+let unboxStep = 0;
+
+function startDelivery() {
+  showScene(sceneDoor);
+  const truck = $('truck');
+  truck.style.display = 'block';
+  truck.classList.remove('truck-bounce', 'driving', 'leaving');
+  truck.innerHTML = svgWrap(PKG_SVGS.truck);
+  $('packageDoor').style.display = 'none';
+  $('doorHint').style.display = 'none';
+  $('doorTitle').textContent = '叮咚！快递来啦 🚚';
+  $('shopRow').style.display = 'none';
+
+  void truck.offsetWidth;
+  truck.classList.add('driving');
+  SFX.truck();
+
+  setTimeout(() => {
+    SFX.doorbell();
+    truck.classList.add('truck-bounce');
+  }, 1900);
+
+  setTimeout(() => {
+    truck.classList.remove('truck-bounce', 'driving');
+    truck.classList.add('leaving');
+    SFX.truck();
+
+    setTimeout(() => {
+      truck.style.display = 'none';
+      $('packageDoor').innerHTML = svgWrap(currentBox.pkg);
+      $('packageDoor').style.display = 'block';
+      $('doorHint').style.display = 'block';
+      $('doorTitle').textContent = '快递到啦！🎉';
+    }, 700);
+  }, 2500);
+}
+
+function showShop() {
+  showScene(sceneDoor);
+  $('truck').style.display = 'none';
+  $('packageDoor').style.display = 'none';
+  $('doorHint').style.display = 'none';
+  $('doorTitle').textContent = '选一个快递吧 📦';
+
+  const row = $('shopRow');
+  row.innerHTML = '';
+  row.style.display = 'flex';
+
+  BOXES.forEach(box => {
+    const card = document.createElement('div');
+    const canAfford = state.coins >= box.cost;
+    card.className = 'shop-card' + (canAfford ? '' : ' locked');
+    card.innerHTML = `
+      <div class="pkg-icon">${svgWrap(box.pkg)}</div>
+      <div class="label">${box.name}</div>
+      <div class="cost">${box.cost === 0 ? '免费' : box.cost + ' ⭐'}</div>
+    `;
+    if (canAfford) {
+      card.addEventListener('click', () => {
+        getCtx();
+        if (state.coins >= box.cost) {
+          state.coins -= box.cost;
+          updateTopbar(); saveState();
+          currentBox = box;
+          playJourney();
+        }
+      });
+    }
+    row.appendChild(card);
+  });
+}
+
+$('packageDoor').addEventListener('click', () => {
+  SFX.whoosh();
+  showScene(sceneUnbox);
+  setupUnboxing();
+});
+
+function setupUnboxing() {
+  unboxStep = 0;
+  poppedCount = 0;
+  popBonusGiven = false;
+  const box = $('bigBox');
+  box.classList.remove('box-open');
+  $('tape').classList.remove('cut');
+
+  const oldWrap = box.querySelector('.bubble-wrap');
+  if (oldWrap) oldWrap.remove();
+
+  $('cutter').classList.remove('cutting');
+  $('cutter').style.display = 'block';
+  $('unboxTitle').textContent = '拆开它！';
+  $('unboxHint').textContent = '👆 划开胶带';
+  $('bubbleCounter').style.display = 'none';
+  $('bubbleCounter').classList.remove('full');
+  box.onclick = onCutTape;
+}
+
+function onCutTape() {
+  if (unboxStep !== 0) return;
+  unboxStep = 1;
+  SFX.cut();
+  vibrate(40);
+  $('cutter').classList.add('cutting');
+  $('tape').classList.add('cut');
+
+  setTimeout(() => {
+    $('cutter').style.display = 'none';
+    $('unboxHint').textContent = '👆 打开盒子';
+    $('bigBox').onclick = onOpenFlaps;
+  }, 600);
+}
+
+function onOpenFlaps() {
+  if (unboxStep !== 1) return;
+  unboxStep = 2;
+  SFX.whoosh();
+  $('bigBox').classList.add('box-open');
+  $('bigBox').onclick = null;
+
+  setTimeout(() => {
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+    totalBubbles = 49;
+    for (let i = 0; i < totalBubbles; i++) {
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      b.addEventListener('click', onPopBubble);
+      b.addEventListener('mouseover', e => { if (e.buttons === 1) onPopBubble.call(b); });
+      wrap.appendChild(b);
+    }
+    wrap.addEventListener('touchmove', handleTouchPop, { passive: true });
+    $('bigBox').appendChild(wrap);
+    $('unboxHint').textContent = '👆 戳破全部气泡膜！';
+    poppedCount = 0;
+    popBonusGiven = false;
+    const counter = $('bubbleCounter');
+    counter.textContent = `0/${totalBubbles}`;
+    counter.classList.remove('full');
+    counter.style.display = 'block';
+  }, 600);
+}
+
+function handleTouchPop(e) {
+  for (const t of e.touches) {
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    if (el && el.classList && el.classList.contains('bubble') && !el.classList.contains('popped')) {
+      onPopBubble.call(el);
+    }
+  }
+}
+
+let poppedCount = 0;
+let totalBubbles = 49;
+let popBonusGiven = false;
+
+function onPopBubble() {
+  if (this.classList.contains('popped')) return;
+  this.classList.add('popped');
+  SFX.pop();
+  vibrate(8);
+  poppedCount++;
+  const counter = $('bubbleCounter');
+  counter.textContent = `${poppedCount}/${totalBubbles}`;
+  if (poppedCount >= totalBubbles && !popBonusGiven) {
+    popBonusGiven = true;
+    counter.classList.add('full');
+    SFX.ding();
+    vibrate([60, 40, 80]);
+    setTimeout(reveal, 500);
+  }
+}
+
+// ============================================================
+// 抽奖 + 揭晓
+// ============================================================
+function rollToy() {
+  const weights = currentBox.bonus;
+  const total = Object.values(weights).reduce((a,b) => a+b, 0);
+  let roll = Math.random() * total;
+  let chosenRarity = 'common';
+  for (const [rarity, w] of Object.entries(weights)) {
+    if (roll < w) { chosenRarity = rarity; break; }
+    roll -= w;
+  }
+  const candidates = TOYS.filter(t => t.rarity === chosenRarity);
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+const POP_BONUS = 5;
+const VIBE_REVEAL = {
+  common:    [30],
+  rare:      [40, 50, 40],
+  epic:      [60, 50, 60, 50, 80],
+  legendary: [80, 50, 80, 50, 100, 50, 120],
+};
+
+function reveal() {
+  const toy = rollToy();
+  const info = RARITY_INFO[toy.rarity];
+
+  state.collection[toy.id] = (state.collection[toy.id] || 0) + 1;
+  if (!state.firstAt[toy.id]) state.firstAt[toy.id] = Date.now();
+  state.coins += info.coins + POP_BONUS;
+  saveState();
+  updateTopbar();
+
+  showScene(sceneReveal);
+  const reveal = $('toyReveal');
+  reveal.innerHTML = svgWrap(toy.svg);
+  reveal.className = 'toy-reveal' + (toy.rarity === 'legendary' ? ' legendary' : '');
+  $('toyName').textContent = toy.name;
+  const badge = $('rarityBadge');
+  badge.textContent = info.name + (toy.rarity === 'legendary' ? ' ✨' : '');
+  badge.className = 'rarity-badge ' + info.class;
+  $('rewardCoins').textContent = '+' + info.coins + ' ⭐';
+  $('bonusText').textContent = `🎉 全部戳爆 +${POP_BONUS}⭐`;
+  $('bonusText').style.display = 'block';
+
+  const glow = $('legendaryGlow');
+  if (toy.rarity === 'legendary' || toy.rarity === 'epic') {
+    glow.className = 'legendary-glow';
+    glow.style.display = 'block';
+  } else {
+    glow.style.display = 'none';
+  }
+
+  SFX.reveal(toy.rarity);
+  vibrate(VIBE_REVEAL[toy.rarity] || [30]);
+  setTimeout(() => SFX.coin(), 500);
+
+  spawnConfetti(toy.rarity === 'legendary' ? 80 : toy.rarity === 'epic' ? 50 : toy.rarity === 'rare' ? 30 : 15);
+
+  if (state.collection[toy.id] === 1) {
+    setTimeout(() => {
+      const ft = document.createElement('div');
+      ft.className = 'float-text';
+      ft.textContent = '✨ 新收藏！';
+      ft.style.left = '50%';
+      ft.style.top = '60%';
+      ft.style.transform = 'translateX(-50%)';
+      sceneReveal.appendChild(ft);
+      setTimeout(() => ft.remove(), 1500);
+    }, 800);
+  }
+}
+
+function spawnConfetti(count) {
+  const colors = ['#ff6b9d', '#4ecdc4', '#ffd700', '#9b59b6', '#3498db', '#2ecc71', '#e74c3c'];
+  for (let i = 0; i < count; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.top = -20 + 'px';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = Math.random() * 0.5 + 's';
+    c.style.animationDuration = (1.5 + Math.random()) + 's';
+    if (Math.random() < 0.3) c.style.borderRadius = '50%';
+    sceneReveal.appendChild(c);
+    setTimeout(() => c.remove(), 2500);
+  }
+}
+
+$('continueBtn').addEventListener('click', () => {
+  showShop();
+});
+
+// ============================================================
+// 收藏图鉴
+// ============================================================
+$('openCollection').addEventListener('click', () => {
+  renderCollection();
+  $('collectionModal').classList.remove('hidden');
+});
+$('closeCollection').addEventListener('click', () => {
+  $('collectionModal').classList.add('hidden');
+});
+$('collectionModal').addEventListener('click', e => {
+  if (e.target === $('collectionModal')) $('collectionModal').classList.add('hidden');
+});
+
+function renderCollection() {
+  const grid = $('collectionGrid');
+  grid.innerHTML = '';
+  const order = { legendary: 0, epic: 1, rare: 2, common: 3 };
+  const sorted = [...TOYS].sort((a,b) => order[a.rarity] - order[b.rarity]);
+  for (const toy of sorted) {
+    const cell = document.createElement('div');
+    const owned = state.collection[toy.id] || 0;
+    cell.className = 'collection-cell ' + (owned > 0 ? 'unlocked ' + toy.rarity : 'locked');
+    if (owned > 0) {
+      cell.innerHTML = svgWrap(toy.svg);
+      cell.title = toy.name;
+      if (owned > 1) {
+        const badge = document.createElement('div');
+        badge.className = 'count-badge';
+        badge.textContent = '×' + owned;
+        cell.appendChild(badge);
+      }
+      cell.addEventListener('click', () => showToyDetail(toy));
+    }
+    grid.appendChild(cell);
+  }
+  const collected = Object.keys(state.collection).length;
+  $('progressText').textContent = `已收集 ${collected}/${TOYS.length} 件玩具`;
+}
+
+function showToyDetail(toy) {
+  const info = RARITY_INFO[toy.rarity];
+  const owned = state.collection[toy.id] || 0;
+  const firstAt = state.firstAt[toy.id];
+  $('toyDetailSvg').innerHTML = svgWrap(toy.svg);
+  $('toyDetailName').textContent = toy.name;
+  const badge = $('toyDetailRarity');
+  badge.textContent = info.name + (toy.rarity === 'legendary' ? ' ✨' : '');
+  badge.className = 'rarity-badge ' + info.class;
+  let stats = `获得 ${owned} 次 · 单抽奖励 ${info.coins} ⭐`;
+  if (firstAt) {
+    const d = new Date(firstAt);
+    const ymd = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    stats += `<br>首次获得：${ymd}`;
+  }
+  $('toyDetailStats').innerHTML = stats;
+  $('toyDetailModal').classList.remove('hidden');
+}
+
+$('closeToyDetail').addEventListener('click', () => {
+  $('toyDetailModal').classList.add('hidden');
+});
+$('toyDetailModal').addEventListener('click', e => {
+  if (e.target === $('toyDetailModal')) $('toyDetailModal').classList.add('hidden');
+});
+
+// ============================================================
+// 静音 / 震动开关
+// ============================================================
+function applyMute() {
+  $('muteBtn').textContent = state.muted ? '🔇' : '🔊';
+}
+$('muteBtn').addEventListener('click', () => {
+  state.muted = !state.muted;
+  applyMute();
+  saveState();
+  if (!state.muted) {
+    getCtx();
+    vibrate(20);
+  }
+});
+
+// ============================================================
+// 启动
+// ============================================================
+loadState();
+applyMute();
+updateTopbar();
+showShop();
+
+document.addEventListener('dblclick', e => e.preventDefault());
+document.addEventListener('gesturestart', e => e.preventDefault());
+</script>
+</body>
+</html>
