@@ -2042,14 +2042,16 @@ const CITY_POOLS = {
   ],
 };
 
+// 各阶段动画时长（毫秒）—— 拉长是为了让娃多看一会儿
+// 想再慢点就调大数值；想快回原速把所有 duration 除以 ~2.8
 const STAGE_TYPES = {
-  warehouse:  { icon: '📦', vehicle: 'truck_van',  bg: 'warehouse',    duration: 1400, sound: 'whoosh' },
-  hsr:        { icon: '🚄', vehicle: 'hsr',        bg: 'countryside',  duration: 1700, sound: 'train' },
-  truck_long: { icon: '🚛', vehicle: 'truck_van',  bg: 'countryside',  duration: 1500, sound: 'truck' },
-  air:        { icon: '✈️', vehicle: 'plane',      bg: 'sky',          duration: 1700, sound: 'plane' },
-  city_hub:   { icon: '🚚', vehicle: 'truck_van',  bg: 'city',         duration: 1300, sound: 'truck' },
-  moto:       { icon: '🛵', vehicle: 'motorcycle', bg: 'suburb',       duration: 1300, sound: 'moto' },
-  tricycle:   { icon: '🛺', vehicle: 'tricycle',   bg: 'neighborhood', duration: 1300, sound: 'truck' },
+  warehouse:  { icon: '📦', vehicle: 'truck_van',  bg: 'warehouse',    duration: 4000, sound: 'whoosh' },
+  hsr:        { icon: '🚄', vehicle: 'hsr',        bg: 'countryside',  duration: 7000, sound: 'train' },
+  truck_long: { icon: '🚛', vehicle: 'truck_van',  bg: 'countryside',  duration: 5500, sound: 'truck' },
+  air:        { icon: '✈️', vehicle: 'plane',      bg: 'sky',          duration: 7500, sound: 'plane' },
+  city_hub:   { icon: '🚚', vehicle: 'truck_van',  bg: 'city',         duration: 4000, sound: 'truck' },
+  moto:       { icon: '🛵', vehicle: 'motorcycle', bg: 'suburb',       duration: 4000, sound: 'moto' },
+  tricycle:   { icon: '🛺', vehicle: 'tricycle',   bg: 'neighborhood', duration: 4000, sound: 'truck' },
 };
 
 const JOURNEY_TEMPLATES = {
