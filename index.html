@@ -774,6 +774,17 @@
     .shop-card .pkg-icon { width: 56px; height: 56px; }
   }
 
+  /* ============ 物流地图场景（俯视 SVG 图） ============ */
+  .map-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+  .map-svg .waypoint { transition: transform 0.3s; }
+  .map-svg .waypoint circle { transition: fill 0.4s, stroke 0.4s; }
+
   /* ============ 物流地图场景 ============ */
   .map-scene { background: #87ceeb; overflow: hidden; }
   .map-bg-layer {
@@ -1130,10 +1141,41 @@
     <div class="shop-row" id="shopRow" style="position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px) + 24px); left:0; right:0; display:none; z-index:9"></div>
   </div>
 
-  <!-- 场景：物流地图 -->
+  <!-- 场景：物流地图（俯视追踪图） -->
   <div class="scene map-scene hidden" id="sceneMap">
-    <div class="map-bg-layer" id="mapBg"></div>
-    <div class="map-decor" id="mapDecor"></div>
+    <svg class="map-svg" id="mapSvg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a8dadc"/>
+          <stop offset="100%" stop-color="#7ab8c8"/>
+        </linearGradient>
+        <radialGradient id="landGrad" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#fdf3d4"/>
+          <stop offset="100%" stop-color="#e0cd9a"/>
+        </radialGradient>
+        <filter id="mapShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.18"/>
+        </filter>
+        <filter id="dotShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.3"/>
+        </filter>
+      </defs>
+      <g id="mapStatic"></g>
+      <path id="routeShadow" d="" stroke="rgba(0,0,0,0.18)" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,4)"/>
+      <path id="routeBg" d="" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+      <path id="routePath" d="" stroke="#e63946" stroke-width="5" stroke-dasharray="14 8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <animate attributeName="stroke-dashoffset" from="0" to="-44" dur="1.5s" repeatCount="indefinite"/>
+      </path>
+      <g id="waypoints"></g>
+      <g id="movingPkg" transform="translate(80,470)">
+        <circle r="32" fill="#ffd60a" opacity="0.4">
+          <animate attributeName="r" values="28;46" dur="1.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.5;0" dur="1.2s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="24" fill="#ffd60a" stroke="#1d3557" stroke-width="3" filter="url(#dotShadow)"/>
+        <text id="pkgEmoji" text-anchor="middle" dominant-baseline="central" font-size="26" font-family="sans-serif">📦</text>
+      </g>
+    </svg>
     <div class="tracking-card" id="trackingCard">
       <div class="tracking-header">
         <span>📋 <span id="trackingNum">SF000000000000</span></span>
@@ -1143,7 +1185,6 @@
       <div class="tracking-current" id="trackingCurrent">出库中...</div>
       <div class="tracking-log" id="trackingLog"></div>
     </div>
-    <div class="map-vehicle" id="mapVehicle"></div>
     <div class="checkpoint-toast" id="checkpointToast"></div>
     <div class="map-progress" id="mapProgress"></div>
   </div>
@@ -2455,13 +2496,228 @@ function describeStage(stage) {
   return `${stage.icon} ${stage.name} · ${stage.city}`;
 }
 
+// ============================================================
+// 静态地图（陆地/海洋/山脉/森林）
+// ============================================================
+function buildStaticMap() {
+  const staticG = document.getElementById('mapStatic');
+  if (!staticG || staticG.dataset.built) return;
+  let html = '';
+
+  // 海面
+  html += `<rect width="1000" height="600" fill="url(#seaGrad)"/>`;
+
+  // 海面波纹
+  const waveSeed = [
+    [80,140],[220,90],[380,110],[540,90],[700,130],[860,100],
+    [60,540],[260,560],[460,580],[660,560],[860,540],
+    [40,310],[960,260],[40,420],[960,420]
+  ];
+  for (const [x,y] of waveSeed) {
+    html += `<path d="M${x},${y} q15,-5 30,0 t30,0" stroke="#fff" stroke-width="2" fill="none" opacity="0.5"/>`;
+  }
+
+  // 大陆主体
+  html += `<path d="M-10,90 Q120,40 240,70 Q360,90 480,60 Q600,40 720,80 Q860,110 1010,90 L1010,520 Q900,560 760,540 Q620,520 460,550 Q300,570 140,545 Q60,535 -10,520 Z" fill="url(#landGrad)" filter="url(#mapShadow)"/>`;
+
+  // 海岸线纹理
+  html += `<path d="M-10,90 Q120,40 240,70 Q360,90 480,60 Q600,40 720,80 Q860,110 1010,90" stroke="#c9b378" stroke-width="2" fill="none" opacity="0.5"/>`;
+  html += `<path d="M-10,520 Q140,545 300,570 Q460,550 620,520 Q760,540 900,560 Q960,540 1010,520" stroke="#c9b378" stroke-width="2" fill="none" opacity="0.5"/>`;
+
+  // 河流
+  html += `<path d="M120,140 Q150,250 130,360 Q115,450 90,540" stroke="#7ab8d4" stroke-width="6" fill="none" opacity="0.65" stroke-linecap="round"/>`;
+  html += `<path d="M120,140 Q150,250 130,360 Q115,450 90,540" stroke="#a8dadc" stroke-width="3" fill="none" opacity="0.7" stroke-linecap="round"/>`;
+  html += `<path d="M650,90 Q620,150 590,220 Q570,260 540,290" stroke="#7ab8d4" stroke-width="5" fill="none" opacity="0.65" stroke-linecap="round"/>`;
+  html += `<path d="M650,90 Q620,150 590,220 Q570,260 540,290" stroke="#a8dadc" stroke-width="2.5" fill="none" opacity="0.7" stroke-linecap="round"/>`;
+
+  // 山脉
+  const mountainGroups = [
+    { x: 280, y: 320 }, { x: 590, y: 360 }, { x: 880, y: 200 },
+  ];
+  for (const m of mountainGroups) {
+    html += `<g>
+      <path d="M${m.x},${m.y+50} L${m.x+35},${m.y-15} L${m.x+70},${m.y+50} Z" fill="#a98467" stroke="#7d5e44" stroke-width="1.5"/>
+      <path d="M${m.x+30},${m.y+50} L${m.x+65},${m.y-30} L${m.x+100},${m.y+50} Z" fill="#937358" stroke="#7d5e44" stroke-width="1.5"/>
+      <path d="M${m.x+55},${m.y+50} L${m.x+85},${m.y+5} L${m.x+115},${m.y+50} Z" fill="#a98467" stroke="#7d5e44" stroke-width="1.5"/>
+      <path d="M${m.x+35},${m.y-15} L${m.x+45},${m.y-2} L${m.x+25},${m.y-2} Z" fill="#fff" opacity="0.9"/>
+      <path d="M${m.x+65},${m.y-30} L${m.x+78},${m.y-12} L${m.x+52},${m.y-12} Z" fill="#fff" opacity="0.9"/>
+    </g>`;
+  }
+
+  // 森林
+  const forestSpots = [
+    { x: 150, y: 230, n: 9 }, { x: 470, y: 360, n: 11 }, { x: 760, y: 480, n: 8 },
+    { x: 350, y: 460, n: 10 }, { x: 880, y: 320, n: 7 },
+  ];
+  for (const f of forestSpots) {
+    for (let i = 0; i < f.n; i++) {
+      const dx = (Math.random() - 0.5) * 70;
+      const dy = (Math.random() - 0.5) * 30;
+      const r = 5 + Math.random() * 4;
+      const colors = ['#52b788', '#74c69d', '#40916c', '#2d6a4f'];
+      const color = colors[Math.floor(Math.random()*colors.length)];
+      html += `<circle cx="${f.x+dx}" cy="${f.y+dy}" r="${r}" fill="${color}"/>`;
+    }
+  }
+
+  // 装饰小城市
+  const decorCities = [
+    { x: 100, y: 165 }, { x: 850, y: 130 }, { x: 600, y: 460 },
+  ];
+  for (const c of decorCities) {
+    html += `<g transform="translate(${c.x},${c.y})">
+      <rect x="-2" y="-22" width="9" height="22" fill="#6c757d"/>
+      <rect x="9" y="-32" width="9" height="32" fill="#495057"/>
+      <rect x="20" y="-18" width="9" height="18" fill="#6c757d"/>
+      <rect x="31" y="-28" width="9" height="28" fill="#495057"/>
+      <rect x="42" y="-15" width="9" height="15" fill="#6c757d"/>
+      <rect x="0" y="-18" width="2" height="2" fill="#ffd60a"/>
+      <rect x="11" y="-25" width="2" height="2" fill="#ffd60a"/>
+      <rect x="33" y="-22" width="2" height="2" fill="#ffd60a"/>
+    </g>`;
+  }
+
+  // 云朵
+  const clouds = [{ x: 130, y: 100 }, { x: 450, y: 70 }, { x: 770, y: 120 }];
+  for (const c of clouds) {
+    html += `<g transform="translate(${c.x},${c.y})" opacity="0.85">
+      <ellipse cx="0" cy="0" rx="35" ry="10" fill="#fff"/>
+      <circle cx="-12" cy="-6" r="14" fill="#fff"/>
+      <circle cx="6" cy="-9" r="16" fill="#fff"/>
+      <circle cx="22" cy="-4" r="11" fill="#fff"/>
+    </g>`;
+  }
+
+  // 指北针
+  html += `<g transform="translate(940, 80)">
+    <circle r="32" fill="rgba(255,255,255,0.92)" stroke="#1d3557" stroke-width="2.5" filter="url(#mapShadow)"/>
+    <path d="M0,-26 L5,0 L0,26 L-5,0 Z" fill="#e63946"/>
+    <path d="M-26,0 L0,5 L26,0 L0,-5 Z" fill="#1d3557" opacity="0.4"/>
+    <text y="-36" text-anchor="middle" font-size="14" font-weight="bold" fill="#1d3557" font-family="sans-serif">N</text>
+  </g>`;
+
+  // 比例尺
+  html += `<g transform="translate(60, 560)">
+    <rect x="0" y="-2" width="120" height="4" fill="#1d3557"/>
+    <rect x="0" y="-2" width="40" height="4" fill="#fff" stroke="#1d3557" stroke-width="0.5"/>
+    <rect x="80" y="-2" width="40" height="4" fill="#fff" stroke="#1d3557" stroke-width="0.5"/>
+    <text x="60" y="-8" text-anchor="middle" font-size="11" fill="#1d3557" font-family="sans-serif">2000 km</text>
+  </g>`;
+
+  staticG.innerHTML = html;
+  staticG.dataset.built = '1';
+}
+
+// 阶段类型 → 在地图上的相对位置（0~1，沿弧形分布）
+const STAGE_TYPE_LANE = {
+  warehouse:  { lane: 'low' },   // 起点附近
+  truck_long: { lane: 'mid' },   // 干线运输中
+  hsr:        { lane: 'mid' },
+  air:        { lane: 'high' },  // 空中
+  city_hub:   { lane: 'mid' },
+  moto:       { lane: 'low' },   // 接近终点
+  tricycle:   { lane: 'low' },
+};
+
+// 根据 stages 生成路径上的坐标点（N+1 点：N 段 + 终点家）
+function buildJourneyWaypoints(stages) {
+  const N = stages.length;
+  const total = N + 1;
+  const points = [];
+  // 起点 + 各阶段终点 + 家
+  // x 从 80 到 920 等距分布
+  // y 用正弦波让中段抬高（"飞行"段尤其高）
+  for (let i = 0; i < total; i++) {
+    const t = total === 1 ? 0 : i / (total - 1);
+    const x = 80 + t * 840;
+    let baseY = 470;
+    let arch = 0;
+    if (i < N) {
+      // 站点对应阶段类型
+      const typeKey = stages[i].name.includes('空运') ? 'air'
+        : stages[i].name.includes('高铁') ? 'hsr'
+        : stages[i].vehicle === 'plane' ? 'air'
+        : stages[i].vehicle === 'hsr' ? 'hsr'
+        : null;
+      if (typeKey === 'air') arch = 280;
+      else if (typeKey === 'hsr') arch = 200;
+      else arch = 230 * Math.sin(t * Math.PI);
+    } else {
+      // 终点（家）固定低位
+      arch = 0;
+    }
+    // 综合：让中间高，两边低
+    const y = i === 0 || i === total - 1
+      ? baseY
+      : baseY - Math.max(arch, 230 * Math.sin(t * Math.PI));
+    points.push({ x, y });
+  }
+  return points;
+}
+
+function pathDFromPoints(points) {
+  if (points.length < 2) return '';
+  let d = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+  // 用 Q 曲线让线条更柔顺
+  for (let i = 1; i < points.length; i++) {
+    const p0 = points[i-1];
+    const p1 = points[i];
+    const cx = (p0.x + p1.x) / 2;
+    const cy = Math.min(p0.y, p1.y) - 12;
+    d += ` Q ${cx.toFixed(1)},${cy.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+function renderWaypoints(points, stages) {
+  const wpEl = document.getElementById('waypoints');
+  let wpHtml = '';
+  points.forEach((p, i) => {
+    const isLast = i === points.length - 1;
+    const stage = i < stages.length ? stages[i] : null;
+    const icon = isLast ? '🏠' : stage.icon;
+    const label = isLast ? '你家' : (stage.city || '中转');
+    const labelW = Math.min(180, Math.max(60, label.length * 14 + 14));
+    wpHtml += `<g class="waypoint" data-idx="${i}" transform="translate(${p.x},${p.y})">`;
+    wpHtml += `<circle r="22" fill="#fff" stroke="#1d3557" stroke-width="2.5" filter="url(#dotShadow)"/>`;
+    wpHtml += `<text text-anchor="middle" dominant-baseline="central" font-size="20" font-family="sans-serif">${icon}</text>`;
+    wpHtml += `<rect x="${-labelW/2}" y="28" width="${labelW}" height="20" rx="10" fill="#1d3557"/>`;
+    wpHtml += `<text text-anchor="middle" y="42" font-size="11" font-weight="bold" fill="#fff" font-family="sans-serif">${label}</text>`;
+    wpHtml += `</g>`;
+  });
+  wpEl.innerHTML = wpHtml;
+}
+
+function highlightWaypoint(idx) {
+  document.querySelectorAll('#waypoints .waypoint').forEach((g, i) => {
+    const circle = g.querySelector('circle');
+    if (i <= idx) {
+      circle.setAttribute('fill', '#06d6a0');
+      circle.setAttribute('stroke', '#02856b');
+    } else {
+      circle.setAttribute('fill', '#fff');
+      circle.setAttribute('stroke', '#1d3557');
+    }
+  });
+}
+
 async function playJourney() {
   showScene(sceneMap);
+  buildStaticMap();
 
   const journey = generateJourney(currentBox.id);
   currentJourney = journey;
 
-  // 模拟时间起点：往前推 4-12 小时，每段递增 30-90 分钟，看起来像跨小时的真实物流
+  // 路径与站点
+  const points = buildJourneyWaypoints(journey.stages);
+  const pathD = pathDFromPoints(points);
+  ['routePath', 'routeBg', 'routeShadow'].forEach(id => {
+    document.getElementById(id).setAttribute('d', pathD);
+  });
+  renderWaypoints(points, journey.stages);
+  highlightWaypoint(-1);
+
+  // 模拟时间
   const simBase = new Date(Date.now() - (4 + Math.random() * 8) * 3600 * 1000);
   let simCursor = simBase.getTime();
 
@@ -2472,45 +2728,97 @@ async function playJourney() {
   $('trackingCurrent').textContent = `${fmtSimTime(simBase)} 已下单 · 等待揽收`;
   appendTrackingLog('📝', fmtSimTime(simBase), `订单已生成 · ${journey.label}`);
 
+  buildMapProgress(-1, journey.stages);
+
+  // 移动包裹
+  const movingPkg = document.getElementById('movingPkg');
+  const pkgEmoji = document.getElementById('pkgEmoji');
+  movingPkg.setAttribute('transform', `translate(${points[0].x},${points[0].y})`);
+  pkgEmoji.textContent = journey.stages[0].icon;
+
+  // 阶段时间表
+  const stageStartTimes = [0];
   for (let i = 0; i < journey.stages.length; i++) {
-    const stage = journey.stages[i];
-
-    $('mapBg').className = 'map-bg-layer map-bg-' + stage.bg;
-    buildMapDecor(stage);
-    buildMapProgress(i, journey.stages);
-    $('trackingCurrent').textContent = describeStage(stage);
-
-    const vehicle = $('mapVehicle');
-    vehicle.classList.remove('crossing', 'arriving', 'flying');
-    vehicle.innerHTML = VEHICLE_SVGS[stage.vehicle];
-    if (stage.vehicle === 'plane') vehicle.classList.add('flying');
-
-    void vehicle.offsetWidth;
-    if (i === journey.stages.length - 1) {
-      vehicle.classList.add('arriving');
-    } else {
-      vehicle.classList.add('crossing');
-    }
-
-    if (SFX[stage.sound]) SFX[stage.sound]();
-
-    await new Promise(r => setTimeout(r, stage.duration));
-
-    simCursor += (30 + Math.random() * 60) * 60 * 1000;
-    const stamp = fmtSimTime(new Date(simCursor));
-    const logText = stage.city === '你家门口'
-      ? '即将抵达 · 你家门口'
-      : `${stage.verb} ${stage.city}`;
-    appendTrackingLog(stage.icon, stamp, logText);
-    showCheckpointToast(stage.city === '你家门口'
-      ? '✓ 即将到家'
-      : `✓ 已抵达 ${stage.city}`);
+    stageStartTimes.push(stageStartTimes[i] + journey.stages[i].duration);
   }
+  const totalDuration = stageStartTimes[journey.stages.length];
 
-  buildMapProgress(journey.stages.length, journey.stages);
-  $('trackingCurrent').textContent = '🏠 派送完成 · 等待签收';
-  await new Promise(r => setTimeout(r, 600));
-  arriveAtDoor();
+  return new Promise(resolve => {
+    const startTime = performance.now();
+    let lastStage = -1;
+
+    function frame(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed, totalDuration);
+
+      // 当前阶段
+      let stageIdx = journey.stages.length - 1;
+      for (let i = 0; i < journey.stages.length; i++) {
+        if (t < stageStartTimes[i+1]) { stageIdx = i; break; }
+      }
+
+      // 段内插值（线性）
+      const segElapsed = t - stageStartTimes[stageIdx];
+      const segProgress = Math.min(segElapsed / journey.stages[stageIdx].duration, 1);
+      const p0 = points[stageIdx];
+      const p1 = points[stageIdx + 1];
+      // 用三次缓动让起步停止顺滑
+      const eased = segProgress < 0.5
+        ? 2 * segProgress * segProgress
+        : 1 - Math.pow(-2 * segProgress + 2, 2) / 2;
+      const x = p0.x + (p1.x - p0.x) * eased;
+      const y = p0.y + (p1.y - p0.y) * eased;
+      movingPkg.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+
+      // 阶段切换
+      if (stageIdx !== lastStage) {
+        const s = journey.stages[stageIdx];
+        pkgEmoji.textContent = s.icon;
+        $('trackingCurrent').textContent = describeStage(s);
+        if (SFX[s.sound]) SFX[s.sound]();
+        buildMapProgress(stageIdx, journey.stages);
+        highlightWaypoint(stageIdx);
+
+        // 上一段完成日志
+        if (lastStage >= 0) {
+          simCursor += (30 + Math.random() * 60) * 60 * 1000;
+          const stamp = fmtSimTime(new Date(simCursor));
+          const prev = journey.stages[lastStage];
+          const logText = prev.city === '你家门口'
+            ? '即将抵达 · 你家门口'
+            : `${prev.verb} ${prev.city}`;
+          appendTrackingLog(prev.icon, stamp, logText);
+          showCheckpointToast(prev.city === '你家门口'
+            ? '✓ 即将到家'
+            : `✓ 已抵达 ${prev.city}`);
+        }
+        lastStage = stageIdx;
+      }
+
+      if (t < totalDuration) {
+        requestAnimationFrame(frame);
+      } else {
+        // 终点
+        const lastS = journey.stages[journey.stages.length - 1];
+        simCursor += (30 + Math.random() * 60) * 60 * 1000;
+        const stamp = fmtSimTime(new Date(simCursor));
+        const logText = lastS.city === '你家门口'
+          ? '即将抵达 · 你家门口'
+          : `${lastS.verb} ${lastS.city}`;
+        appendTrackingLog(lastS.icon, stamp, logText);
+        showCheckpointToast('✓ 即将到家');
+
+        buildMapProgress(journey.stages.length, journey.stages);
+        highlightWaypoint(points.length - 1);
+        $('trackingCurrent').textContent = '🏠 派送完成 · 等待签收';
+        setTimeout(() => {
+          arriveAtDoor();
+          resolve();
+        }, 600);
+      }
+    }
+    requestAnimationFrame(frame);
+  });
 }
 
 function arriveAtDoor() {
