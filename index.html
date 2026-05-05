@@ -1029,13 +1029,22 @@
     background: linear-gradient(180deg, #f8f8f4 0%, #e0e0d8 100%);
     border: 4px solid #5a4838;
     border-radius: 14px;
-    padding: clamp(14px, 3vmin, 24px) clamp(16px, 3.5vmin, 28px);
+    padding: clamp(12px, 2.4vmin, 20px) clamp(14px, 3vmin, 24px);
     z-index: 9;
     box-shadow:
       0 12px 24px rgba(0,0,0,0.4),
       inset 0 2px 4px rgba(255,255,255,0.6);
     transition: opacity 0.3s, transform 0.3s;
+    /* 33 楼按钮一屏可能放不下：限制最高，超出可滚动 */
+    max-height: 78vh;
+    max-width: 92vw;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
+  .elev-panel::-webkit-scrollbar { width: 6px; }
+  .elev-panel::-webkit-scrollbar-track { background: #d8d8d0; border-radius: 3px; }
+  .elev-panel::-webkit-scrollbar-thumb { background: #8a7858; border-radius: 3px; }
   .elev-panel.hiding {
     opacity: 0; transform: translate(-50%, -50%) scale(0.85);
     pointer-events: none;
@@ -1053,7 +1062,21 @@
     grid-template-columns: repeat(3, 1fr);
     gap: clamp(8px, 1.6vmin, 14px);
   }
+  /* 33 楼按钮：4 列网格，按钮更小 */
+  .elev-buttons-floors {
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(6px, 1.2vmin, 12px);
+  }
   .elev-buttons.rooms-2 { grid-template-columns: repeat(2, 1fr); }
+  .elev-btn-small {
+    width: clamp(42px, 9vmin, 64px) !important;
+    height: clamp(42px, 9vmin, 64px) !important;
+    font-size: clamp(15px, 3.2vmin, 24px) !important;
+    box-shadow: 0 4px 0 #6a584a, 0 6px 10px rgba(0,0,0,0.22), inset 0 2px 3px rgba(255,255,255,0.7) !important;
+  }
+  .elev-btn-small:active, .elev-btn-small.pressed {
+    box-shadow: 0 0 22px #ff4444, 0 1px 0 #6a584a, inset 0 0 8px rgba(255,255,255,0.5) !important;
+  }
   .elev-btn {
     width: clamp(50px, 11vmin, 80px);
     height: clamp(50px, 11vmin, 80px);
@@ -1140,6 +1163,8 @@
     width: 100%;
     height: 100%;
     z-index: 1;
+    /* meet 模式下留白用海色填充，整张图能看见 */
+    background: linear-gradient(180deg, #a8dadc 0%, #7ab8c8 100%);
   }
   .map-svg .waypoint { transition: transform 0.3s; }
   .map-svg .waypoint circle { transition: fill 0.4s, stroke 0.4s; }
@@ -1811,7 +1836,7 @@
 
   <!-- 场景：物流地图（俯视追踪图） -->
   <div class="scene map-scene hidden" id="sceneMap">
-    <svg class="map-svg" id="mapSvg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <svg class="map-svg" id="mapSvg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#a8dadc"/>
@@ -3128,24 +3153,26 @@ function showScene(scene) {
 // ============================================================
 let currentApartment = 88;  // 默认门牌
 
+const TOTAL_FLOORS = 33;
+
 function selectFloor() {
   const panel = $('elevPanel');
-  $('elevPanelTitle').textContent = '🛗 请选择楼层';
+  $('elevPanelTitle').textContent = '🛗 请选择楼层 (1-' + TOTAL_FLOORS + ')';
   panel.classList.remove('hiding');
   const buttonsEl = $('elevButtons');
   buttonsEl.innerHTML = '';
-  buttonsEl.className = 'elev-buttons';
+  buttonsEl.className = 'elev-buttons elev-buttons-floors';
   return new Promise(resolve => {
-    for (let f = 1; f <= 9; f++) {
+    for (let f = 1; f <= TOTAL_FLOORS; f++) {
       const btn = document.createElement('button');
-      btn.className = 'elev-btn';
+      btn.className = 'elev-btn elev-btn-small';
       btn.textContent = f;
       btn.onclick = () => {
         if (btn.classList.contains('pressed')) return;
-        // 取消其他选中
         buttonsEl.querySelectorAll('.elev-btn').forEach(b => b.classList.remove('pressed'));
         btn.classList.add('pressed');
         SFX.elevBeep();
+        // 让用户看一眼按钮亮起再切场景
         setTimeout(() => {
           panel.classList.add('hiding');
           resolve(f);
@@ -3158,22 +3185,40 @@ function selectFloor() {
 
 async function playAscent(targetFloor) {
   $('elevArrow').classList.remove('idle');
-  // 抖动
   $('elevDoors').classList.add('shaking');
-  $('elevDisplayFrame')?.classList.add('shaking');
   document.querySelector('.elev-mirror').classList.add('shaking');
   SFX.elevDoor();
+
+  // 楼层多就跳快点，少就跳慢点；总时长 4.5-7s 之间
+  const climb = targetFloor - 1;
+  let tickEvery;
+  if (climb <= 0) tickEvery = 0;
+  else if (climb <= 5) tickEvery = 500;          // 1-5 楼：每层 500ms
+  else if (climb <= 12) tickEvery = 320;         // 6-12 楼：每层 320ms
+  else if (climb <= 22) tickEvery = 220;         // 13-22 楼：每层 220ms
+  else tickEvery = 170;                          // 23-33 楼：每层 170ms
 
   return new Promise(resolve => {
     let current = 1;
     $('elevDisplayNum').textContent = current;
-    const tickEvery = 600;
+    if (current === targetFloor) {
+      // 已经在 1 楼，直接到达
+      $('elevDoors').classList.remove('shaking');
+      document.querySelector('.elev-mirror').classList.remove('shaking');
+      $('elevArrow').classList.add('idle');
+      SFX.elevDing();
+      setTimeout(resolve, 400);
+      return;
+    }
     const tick = setInterval(() => {
       current++;
       $('elevDisplayNum').textContent = current;
+      // 长行程时音效稀疏：每 3 层响一次 + 临近目标 3 层响
+      const playSound = climb <= 8
+        || current % 3 === 0
+        || targetFloor - current <= 2;
       if (current === targetFloor) {
         clearInterval(tick);
-        // 停止抖动
         setTimeout(() => {
           $('elevDoors').classList.remove('shaking');
           document.querySelector('.elev-mirror').classList.remove('shaking');
@@ -3181,7 +3226,7 @@ async function playAscent(targetFloor) {
           SFX.elevDing();
           resolve();
         }, 400);
-      } else {
+      } else if (playSound) {
         SFX.elevTick();
       }
     }, tickEvery);
