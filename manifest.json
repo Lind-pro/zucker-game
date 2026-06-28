@@ -30,6 +30,12 @@
       "short_name": "拆快递",
       "url": "./unboxing/",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "五子棋小教练",
+      "short_name": "五子棋",
+      "url": "./gomoku/",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
 }

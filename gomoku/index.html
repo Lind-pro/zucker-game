@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>五子棋小教练</title>
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icon.svg">
+<meta name="theme-color" content="#2ec4b6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(255, 214, 10, 0.24), transparent 28%),
+      radial-gradient(circle at 82% 12%, rgba(255, 107, 157, 0.22), transparent 26%),
+      linear-gradient(135deg, #b8f5e0 0%, #8fd7ff 48%, #ffd6e0 100%);
+    color: #1d3557;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  button, a { font: inherit; }
+  #app {
+    width: 100vw; height: 100vh; height: 100dvh;
+    padding:
+      env(safe-area-inset-top)
+      env(safe-area-inset-right)
+      env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto auto auto;
+    align-items: center;
+    gap: clamp(8px, 1.6vmin, 14px);
+    padding: clamp(8px, 1.5vmin, 14px) clamp(10px, 2vmin, 18px);
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: clamp(42px, 7vmin, 54px); height: clamp(42px, 7vmin, 54px);
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 0 rgba(29, 53, 87, 0.18), 0 8px 18px rgba(0,0,0,0.14);
+    color: #1d3557;
+    display: inline-flex; align-items: center; justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: clamp(19px, 3.6vmin, 25px);
+    padding: 0;
+  }
+  .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(29, 53, 87, 0.2), 0 4px 10px rgba(0,0,0,0.14); }
+  .title-pill, .stars-pill, .turn-pill {
+    min-height: clamp(38px, 6.5vmin, 50px);
+    border-radius: 8px;
+    border: 3px solid #fff;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 4px 0 rgba(29, 53, 87, 0.15), 0 8px 16px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900;
+    color: #1d3557;
+    line-height: 1;
+  }
+  .title-pill {
+    justify-self: start;
+    padding: 0 clamp(10px, 2vmin, 18px);
+    gap: 8px;
+    font-size: clamp(16px, 3vmin, 22px);
+  }
+  .stars-pill {
+    justify-self: end;
+    padding: 0 clamp(12px, 2.4vmin, 20px);
+    gap: 6px;
+    background: linear-gradient(180deg, #ffd60a 0%, #f4a700 100%);
+    color: #fff;
+    text-shadow: 1px 1px 0 #9c6f00;
+    font-size: clamp(17px, 3.2vmin, 24px);
+  }
+  .turn-pill {
+    padding: 0 clamp(10px, 2vmin, 16px);
+    gap: 8px;
+    font-size: clamp(14px, 2.4vmin, 18px);
+    white-space: nowrap;
+  }
+  .turn-dot {
+    width: clamp(20px, 3.8vmin, 28px); height: clamp(20px, 3.8vmin, 28px);
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: inset -4px -5px 8px rgba(0,0,0,0.28), 0 2px 4px rgba(0,0,0,0.2);
+    background: #1d1d25;
+  }
+  .turn-dot.white {
+    background: #fff;
+    border: 2px solid rgba(29, 53, 87, 0.35);
+    box-shadow: inset -4px -5px 8px rgba(80, 90, 110, 0.16), 0 2px 4px rgba(0,0,0,0.16);
+  }
+
+  main {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(230px, 320px);
+    gap: clamp(12px, 2vmin, 20px);
+    padding: 0 clamp(10px, 2vmin, 18px) clamp(10px, 2vmin, 18px);
+  }
+  .play-zone {
+    min-height: 0;
+    display: flex; flex-direction: column;
+    gap: clamp(10px, 1.6vmin, 14px);
+    align-items: center;
+  }
+  .coach {
+    width: min(100%, 760px);
+    min-height: clamp(66px, 10vmin, 86px);
+    border-radius: 8px;
+    border: 3px solid rgba(255,255,255,0.95);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 5px 0 rgba(46, 196, 182, 0.5), 0 12px 22px rgba(0,0,0,0.12);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: clamp(9px, 1.8vmin, 16px);
+    padding: clamp(8px, 1.5vmin, 12px) clamp(10px, 2vmin, 16px);
+  }
+  .coach-face, .coach-visual {
+    width: clamp(44px, 8vmin, 62px); height: clamp(44px, 8vmin, 62px);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(26px, 5vmin, 38px);
+    background: #fff7c2;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    flex-shrink: 0;
+  }
+  .coach-visual {
+    background: #e6fff8;
+    animation: coach-bob 1.4s ease-in-out infinite;
+  }
+  @keyframes coach-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .coach-text {
+    font-size: clamp(17px, 3vmin, 25px);
+    font-weight: 900;
+    line-height: 1.22;
+    color: #123047;
+  }
+
+  .board-wrap {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .board {
+    position: relative;
+    width: min(92vw, 680px, calc(100dvh - 190px));
+    aspect-ratio: 1 / 1;
+    min-width: min(280px, 92vw);
+    min-height: min(280px, 92vw);
+    border-radius: 8px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.42), transparent 30%),
+      linear-gradient(180deg, #f6cf77 0%, #d99b45 100%);
+    border: clamp(8px, 1.6vmin, 14px) solid #8f5f2b;
+    box-shadow:
+      inset 0 0 0 3px rgba(255,255,255,0.34),
+      0 10px 0 #6f421d,
+      0 20px 28px rgba(0,0,0,0.22);
+    overflow: hidden;
+  }
+  .board::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.12), transparent 18%, rgba(117, 73, 30, 0.08) 40%, transparent 62%),
+      repeating-linear-gradient(12deg, rgba(117,73,30,0.08) 0 2px, transparent 2px 18px);
+    pointer-events: none;
+  }
+  .board-core {
+    position: absolute;
+    inset: 7.2%;
+    z-index: 1;
+  }
+  .grid-lines, .star-dots, .target-layer, .point-layer, .win-svg {
+    position: absolute; inset: 0;
+  }
+  .grid-line {
+    position: absolute;
+    background: rgba(63, 39, 22, 0.72);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+  .grid-line.v { top: 0; bottom: 0; width: 2px; transform: translateX(-1px); }
+  .grid-line.h { left: 0; right: 0; height: 2px; transform: translateY(-1px); }
+  .star-dot {
+    position: absolute;
+    width: clamp(7px, 1.3vmin, 11px); height: clamp(7px, 1.3vmin, 11px);
+    border-radius: 50%;
+    background: rgba(63, 39, 22, 0.78);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .point {
+    position: absolute;
+    width: clamp(34px, 7.4vmin, 58px); height: clamp(34px, 7.4vmin, 58px);
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    z-index: 4;
+  }
+  .point.empty::before {
+    content: "";
+    width: 30%; height: 30%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0);
+    transition: background 0.12s, transform 0.12s;
+  }
+  .point.empty:active::before {
+    background: rgba(255, 255, 255, 0.72);
+    transform: scale(1.6);
+  }
+  .point:focus-visible { outline: 4px solid #ff6b9d; outline-offset: 2px; }
+  .stone {
+    width: clamp(23px, 5.4vmin, 42px); height: clamp(23px, 5.4vmin, 42px);
+    border-radius: 50%;
+    position: relative;
+    animation: stone-drop 0.24s cubic-bezier(.2, 1.55, .46, 1);
+  }
+  .stone.black {
+    background:
+      radial-gradient(circle at 34% 28%, #72727e 0 10%, transparent 18%),
+      radial-gradient(circle at 50% 55%, #383846 0%, #111119 76%);
+    box-shadow: inset -7px -8px 10px rgba(0,0,0,0.38), 0 5px 7px rgba(0,0,0,0.3);
+  }
+  .stone.white {
+    background:
+      radial-gradient(circle at 34% 28%, #ffffff 0 12%, transparent 22%),
+      radial-gradient(circle at 50% 58%, #ffffff 0%, #e6edf3 78%);
+    border: 2px solid rgba(29, 53, 87, 0.18);
+    box-shadow: inset -7px -8px 10px rgba(80,90,110,0.16), 0 5px 7px rgba(0,0,0,0.22);
+  }
+  .point.last .stone::after {
+    content: "";
+    position: absolute; inset: -7px;
+    border: 3px solid #ffd60a;
+    border-radius: 50%;
+    animation: last-pulse 1s ease-in-out infinite;
+  }
+  .point.win .stone {
+    animation: win-pop 0.8s ease-in-out infinite;
+  }
+  @keyframes stone-drop {
+    0% { transform: translateY(-34px) scale(0.6); opacity: 0; }
+    70% { transform: translateY(2px) scale(1.08); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  @keyframes last-pulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.4; }
+    50% { transform: scale(1.08); opacity: 1; }
+  }
+  @keyframes win-pop {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+  .target {
+    position: absolute;
+    width: clamp(42px, 8.6vmin, 66px); height: clamp(42px, 8.6vmin, 66px);
+    border: 4px dashed #ff3864;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 3;
+    animation: target-pulse 0.9s ease-in-out infinite;
+    box-shadow: 0 0 0 8px rgba(255, 56, 100, 0.12);
+  }
+  .target.primary::after {
+    content: "👆";
+    position: absolute;
+    left: 50%; top: -36px;
+    transform: translateX(-50%);
+    font-size: clamp(25px, 5vmin, 38px);
+    filter: drop-shadow(0 3px 3px rgba(0,0,0,0.22));
+    animation: finger-tap 0.9s ease-in-out infinite;
+  }
+  .target-layer.flash .target {
+    animation: target-pulse 0.42s ease-in-out infinite;
+    border-color: #ffd60a;
+    box-shadow: 0 0 0 12px rgba(255, 214, 10, 0.16), 0 0 22px rgba(255, 214, 10, 0.88);
+  }
+  @keyframes target-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(0.84); opacity: 0.8; }
+    50% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+  }
+  @keyframes finger-tap {
+    0%, 100% { transform: translate(-50%, -4px); }
+    50% { transform: translate(-50%, 6px); }
+  }
+  .win-svg {
+    z-index: 5;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .win-svg line {
+    stroke: #ff3864;
+    stroke-width: 4;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.85));
+    stroke-dasharray: 120;
+    animation: draw-line 0.45s ease-out forwards;
+  }
+  @keyframes draw-line {
+    from { stroke-dashoffset: 120; }
+    to { stroke-dashoffset: 0; }
+  }
+
+  .side-panel {
+    min-height: 0;
+    border-radius: 8px;
+    border: 3px solid rgba(255,255,255,0.95);
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 5px 0 rgba(255, 107, 157, 0.45), 0 12px 22px rgba(0,0,0,0.12);
+    padding: clamp(10px, 2vmin, 16px);
+    display: flex; flex-direction: column;
+    gap: clamp(10px, 1.7vmin, 14px);
+  }
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .mode-tile {
+    border: 3px solid #fff;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff 0%, #f1fbff 100%);
+    box-shadow: 0 4px 0 rgba(29, 53, 87, 0.16), 0 8px 14px rgba(0,0,0,0.1);
+    color: #1d3557;
+    min-height: clamp(76px, 13vmin, 100px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 8px;
+  }
+  .mode-tile:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(29, 53, 87, 0.16), 0 4px 10px rgba(0,0,0,0.12); }
+  .mode-tile.active {
+    background: linear-gradient(180deg, #fff7c2 0%, #ffd60a 100%);
+    border-color: #ff6b9d;
+  }
+  .mode-icon { font-size: clamp(28px, 5.2vmin, 42px); line-height: 1; }
+  .mode-label { font-weight: 900; font-size: clamp(13px, 2.4vmin, 17px); line-height: 1.1; }
+  .progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 4px;
+  }
+  .progress-dot {
+    width: clamp(10px, 2vmin, 15px); height: clamp(10px, 2vmin, 15px);
+    border-radius: 50%;
+    background: rgba(29, 53, 87, 0.18);
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.12);
+  }
+  .progress-dot.done { background: #2ec4b6; box-shadow: 0 0 0 3px rgba(46,196,182,0.14); }
+  .progress-dot.now { background: #ff6b9d; transform: scale(1.25); }
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .action-btn {
+    height: clamp(54px, 9vmin, 70px);
+    border-radius: 8px;
+    border: 3px solid #fff;
+    background: linear-gradient(180deg, #ffffff 0%, #e6fff8 100%);
+    box-shadow: 0 4px 0 rgba(46, 196, 182, 0.5), 0 8px 14px rgba(0,0,0,0.1);
+    font-size: clamp(24px, 4.5vmin, 34px);
+    cursor: pointer;
+  }
+  .action-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(46,196,182,0.5), 0 4px 10px rgba(0,0,0,0.1); }
+  .mini-board {
+    flex: 1;
+    min-height: 86px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #e6fff8 0%, #ffffff 100%);
+    border: 3px solid #fff;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px;
+  }
+  .mini-cell {
+    border-radius: 50%;
+    background: rgba(29, 53, 87, 0.12);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mini-cell.black::before, .mini-cell.white::before {
+    content: "";
+    width: 70%; height: 70%;
+    border-radius: 50%;
+  }
+  .mini-cell.black::before { background: #15151d; }
+  .mini-cell.white::before { background: #fff; border: 1px solid rgba(29, 53, 87, 0.3); }
+  .mini-cell.hot { background: rgba(255, 107, 157, 0.3); box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.15); }
+
+  .toast {
+    position: fixed;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 60;
+    border-radius: 8px;
+    border: 4px solid #fff;
+    background: rgba(18, 48, 71, 0.92);
+    color: #fff;
+    padding: clamp(12px, 2.5vmin, 18px) clamp(18px, 4vmin, 34px);
+    font-size: clamp(20px, 4vmin, 30px);
+    font-weight: 900;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+    pointer-events: none;
+    animation: toast-pop 1.1s ease-out forwards;
+  }
+  @keyframes toast-pop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+    78% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -68%) scale(1); opacity: 0; }
+  }
+
+  .celebration {
+    position: fixed; inset: 0;
+    z-index: 80;
+    background: rgba(18, 48, 71, 0.66);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .celebration.hidden { display: none; }
+  .cel-card {
+    width: min(92vw, 460px);
+    border-radius: 8px;
+    border: 5px solid #fff;
+    background: linear-gradient(180deg, #fff 0%, #fff7c2 100%);
+    box-shadow: 0 12px 0 #d99b45, 0 26px 36px rgba(0,0,0,0.35);
+    text-align: center;
+    padding: clamp(22px, 5vmin, 38px);
+    animation: cel-pop 0.45s cubic-bezier(.25, 1.45, .4, 1);
+  }
+  .cel-emoji {
+    font-size: clamp(62px, 14vmin, 96px);
+    line-height: 1;
+    margin-bottom: 10px;
+    animation: cel-spin 0.8s ease-out;
+  }
+  .cel-title {
+    font-size: clamp(25px, 5vmin, 38px);
+    font-weight: 900;
+    color: #ff3864;
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .cel-sub {
+    font-size: clamp(16px, 3vmin, 22px);
+    color: #1d3557;
+    font-weight: 800;
+    margin-bottom: 18px;
+  }
+  .cel-btn {
+    border-radius: 8px;
+    border: 4px solid #fff;
+    background: linear-gradient(180deg, #2ec4b6 0%, #179d94 100%);
+    color: #fff;
+    box-shadow: 0 6px 0 #0f746e, 0 12px 18px rgba(0,0,0,0.18);
+    padding: clamp(12px, 2.6vmin, 18px) clamp(26px, 6vmin, 46px);
+    font-size: clamp(22px, 4.3vmin, 32px);
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .cel-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #0f746e, 0 6px 12px rgba(0,0,0,0.18); }
+  @keyframes cel-pop {
+    from { transform: scale(0.55); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  @keyframes cel-spin {
+    from { transform: rotate(-160deg) scale(0.2); }
+    to { transform: rotate(0) scale(1); }
+  }
+  .confetti {
+    position: fixed;
+    width: 12px; height: 12px;
+    pointer-events: none;
+    z-index: 90;
+    animation: confetti-fall 2s linear forwards;
+  }
+  @keyframes confetti-fall {
+    from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+
+  @media (max-width: 860px) {
+    .topbar {
+      grid-template-columns: auto auto 1fr auto auto;
+    }
+    .title-pill { display: none; }
+    main {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 10px;
+      overflow: hidden;
+    }
+    .coach {
+      min-height: clamp(58px, 10vmin, 74px);
+      grid-template-columns: auto 1fr auto;
+    }
+    .coach-face, .coach-visual {
+      width: clamp(38px, 8vmin, 54px); height: clamp(38px, 8vmin, 54px);
+    }
+    .board {
+      width: min(94vw, calc(100dvh - 296px));
+      min-width: min(252px, 94vw);
+      min-height: min(252px, 94vw);
+      border-width: 8px;
+    }
+    .side-panel {
+      max-width: 760px;
+      width: 100%;
+      justify-self: center;
+      padding: 9px;
+      gap: 8px;
+    }
+    .mode-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+    .mode-tile {
+      min-height: 66px;
+      padding: 5px;
+    }
+    .mode-icon { font-size: clamp(24px, 6vmin, 34px); }
+    .mode-label { font-size: clamp(11px, 2.8vmin, 14px); }
+    .mini-board { display: none; }
+    .progress-row { min-height: 22px; }
+  }
+  @media (max-height: 650px) {
+    .coach-text { font-size: clamp(14px, 3vmin, 20px); }
+    .coach-face { display: none; }
+    .coach { grid-template-columns: 1fr auto; min-height: 52px; }
+    .side-panel { padding: 7px; }
+    .mode-tile { min-height: 58px; }
+    .progress-row { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <a class="icon-btn" href="../" aria-label="返回游戏屋">🏠</a>
+    <button class="icon-btn" id="modeVoiceBtn" aria-label="再听一遍">🔁</button>
+    <div class="title-pill"><span>⚫⚪</span><span>五子棋小教练</span></div>
+    <div class="stars-pill">⭐ <span id="starsCount">0</span></div>
+    <div class="turn-pill" id="turnPill"><span class="turn-dot" id="turnDot"></span><span id="turnText">黑棋</span></div>
+    <button class="icon-btn" id="muteBtn" aria-label="声音">🔊</button>
+  </header>
+
+  <main>
+    <section class="play-zone">
+      <div class="coach" aria-live="polite">
+        <div class="coach-face">🙂</div>
+        <div class="coach-text" id="coachText">点闪闪的圆圈，放下第一颗黑棋。</div>
+        <div class="coach-visual" id="coachVisual">👆</div>
+      </div>
+
+      <div class="board-wrap">
+        <div class="board" id="board" aria-label="五子棋棋盘">
+          <div class="board-core">
+            <div class="grid-lines" id="gridLines"></div>
+            <div class="star-dots" id="starDots"></div>
+            <svg class="win-svg" id="winSvg" viewBox="0 0 100 100" aria-hidden="true"></svg>
+            <div class="target-layer" id="targetLayer"></div>
+            <div class="point-layer" id="pointLayer"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <div class="mode-grid" id="modeGrid">
+        <button class="mode-tile active" data-mode="lesson" aria-label="学一学">
+          <span class="mode-icon">🎯</span>
+          <span class="mode-label">学一学</span>
+        </button>
+        <button class="mode-tile" data-mode="practice" aria-label="闯关">
+          <span class="mode-icon">🏆</span>
+          <span class="mode-label">闯关</span>
+        </button>
+        <button class="mode-tile" data-mode="robot" aria-label="机器人">
+          <span class="mode-icon">🤖</span>
+          <span class="mode-label">机器人</span>
+        </button>
+        <button class="mode-tile" data-mode="family" aria-label="亲子">
+          <span class="mode-icon">👪</span>
+          <span class="mode-label">亲子</span>
+        </button>
+      </div>
+
+      <div class="progress-row" id="progressRow"></div>
+
+      <div class="action-grid">
+        <button class="action-btn" id="hintBtn" aria-label="提示">💡</button>
+        <button class="action-btn" id="resetBtn" aria-label="重新开始">↻</button>
+        <button class="action-btn" id="sizeBtn" aria-label="棋盘大小">🔲</button>
+      </div>
+
+      <div class="mini-board" id="miniBoard" aria-hidden="true"></div>
+    </aside>
+  </main>
+
+  <div class="celebration hidden" id="celebration">
+    <div class="cel-card">
+      <div class="cel-emoji" id="celEmoji">🎉</div>
+      <div class="cel-title" id="celTitle">太棒啦！</div>
+      <div class="cel-sub" id="celSub">五颗连起来了</div>
+      <button class="cel-btn" id="celBtn">继续 ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BLACK = 1;
+const WHITE = 2;
+const EMPTY = 0;
+const STORAGE_KEY = 'gomoku-kids-v1';
+const dirs = [
+  { dr: 0, dc: 1 },
+  { dr: 1, dc: 0 },
+  { dr: 1, dc: 1 },
+  { dr: 1, dc: -1 },
+];
+
+const lessonSteps = [
+  {
+    setup: [],
+    targets: [{ r: 4, c: 4 }],
+    prompt: '点闪闪的圆圈，放下第一颗黑棋。',
+    success: '第一颗黑棋落下啦。',
+    visual: '👆',
+  },
+  {
+    setup: [{ r: 4, c: 2, v: BLACK }, { r: 4, c: 3, v: BLACK }],
+    targets: [{ r: 4, c: 4 }],
+    prompt: '黑棋排排站，接在旁边。',
+    success: '三颗连成一排。',
+    visual: '➡️',
+  },
+  {
+    setup: [{ r: 4, c: 1, v: BLACK }, { r: 4, c: 2, v: BLACK }, { r: 4, c: 3, v: BLACK }, { r: 4, c: 4, v: BLACK }],
+    targets: [{ r: 4, c: 5 }],
+    prompt: '再放一颗，五颗连起来。',
+    success: '五颗连起来，黑棋赢啦。',
+    visual: '🏁',
+    makesWin: true,
+  },
+  {
+    setup: [{ r: 3, c: 2, v: WHITE }, { r: 3, c: 3, v: WHITE }, { r: 3, c: 4, v: WHITE }, { r: 3, c: 5, v: WHITE }],
+    targets: [{ r: 3, c: 1 }, { r: 3, c: 6 }],
+    prompt: '白棋快要连五，堵住一头。',
+    success: '堵住啦，白棋不能连五。',
+    visual: '🛡️',
+  },
+  {
+    setup: [{ r: 2, c: 2, v: BLACK }, { r: 3, c: 3, v: BLACK }, { r: 4, c: 4, v: BLACK }, { r: 5, c: 5, v: BLACK }],
+    targets: [{ r: 1, c: 1 }, { r: 6, c: 6 }],
+    prompt: '斜斜的也能连成五。',
+    success: '斜线五颗也赢。',
+    visual: '↘️',
+    makesWin: true,
+  },
+  {
+    setup: [{ r: 4, c: 2, v: BLACK }, { r: 4, c: 3, v: BLACK }, { r: 4, c: 5, v: BLACK }, { r: 4, c: 6, v: BLACK }],
+    targets: [{ r: 4, c: 4 }],
+    prompt: '中间缺一颗，补上就赢。',
+    success: '补得真准。',
+    visual: '✨',
+    makesWin: true,
+  },
+];
+
+let saved = {
+  stars: 0,
+  muted: false,
+  lessonIndex: 0,
+  boardSize: 11,
+};
+
+let game = {
+  mode: 'lesson',
+  size: 9,
+  board: [],
+  turn: BLACK,
+  locked: false,
+  gameOver: false,
+  targets: [],
+  lastMove: null,
+  winningCells: [],
+  prompt: '',
+  visual: '👆',
+  lessonIndex: 0,
+  practiceRound: 0,
+  celebrationNext: null,
+};
+
+let audioCtx = null;
+let zhVoice = null;
+
+function $(id) { return document.getElementById(id); }
+function indexOf(r, c) { return r * game.size + c; }
+function inside(r, c) { return r >= 0 && c >= 0 && r < game.size && c < game.size; }
+function getCell(r, c) { return inside(r, c) ? game.board[indexOf(r, c)] : null; }
+function setCell(r, c, value) { game.board[indexOf(r, c)] = value; }
+function pct(n) { return game.size === 1 ? 0 : (n / (game.size - 1)) * 100; }
+function rand(n) { return Math.floor(Math.random() * n); }
+function pick(arr) { return arr[rand(arr.length)]; }
+function other(player) { return player === BLACK ? WHITE : BLACK; }
+
+function loadSaved() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    Object.assign(saved, data);
+  } catch(e) {}
+}
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+  } catch(e) {}
+}
+
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices();
+  zhVoice = voices.find(v => v.lang === 'zh-CN') || voices.find(v => v.lang.startsWith('zh')) || null;
+}
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = pickVoice;
+  pickVoice();
+}
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  if (ctx && ctx.state === 'suspended') ctx.resume();
+}
+function tone(freq, duration, type='sine', volume=0.16) {
+  if (saved.muted) return;
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + duration);
+}
+const sfx = {
+  click: () => tone(520, 0.06, 'square', 0.09),
+  place: () => { tone(392, 0.08, 'triangle', 0.1); setTimeout(() => tone(523, 0.08, 'triangle', 0.09), 65); },
+  wrong: () => { tone(180, 0.18, 'square', 0.09); setTimeout(() => tone(150, 0.22, 'square', 0.08), 130); },
+  star: () => { [784, 988, 1175].forEach((f, i) => setTimeout(() => tone(f, 0.11, 'sine', 0.12), i * 70)); },
+  win: () => { [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'triangle', 0.16), i * 95)); },
+};
+
+function speak(text) {
+  if (saved.muted || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'zh-CN';
+  utterance.rate = 0.86;
+  utterance.pitch = 1.12;
+  if (zhVoice) utterance.voice = zhVoice;
+  speechSynthesis.speak(utterance);
+}
+
+function setCoach(prompt, visual='👆') {
+  game.prompt = prompt;
+  game.visual = visual;
+  $('coachText').textContent = prompt;
+  $('coachVisual').textContent = visual;
+}
+
+function setBoardSize(size) {
+  game.size = size;
+  game.board = new Array(size * size).fill(EMPTY);
+  game.lastMove = null;
+  game.winningCells = [];
+  $('board').style.setProperty('--size', size);
+  renderBoardShell();
+  renderPieces();
+}
+
+function renderBoardShell() {
+  const lines = $('gridLines');
+  const stars = $('starDots');
+  const points = $('pointLayer');
+  lines.innerHTML = '';
+  stars.innerHTML = '';
+  points.innerHTML = '';
+  $('winSvg').innerHTML = '';
+
+  for (let i = 0; i < game.size; i++) {
+    const pos = pct(i);
+    const v = document.createElement('div');
+    v.className = 'grid-line v';
+    v.style.left = pos + '%';
+    lines.appendChild(v);
+
+    const h = document.createElement('div');
+    h.className = 'grid-line h';
+    h.style.top = pos + '%';
+    lines.appendChild(h);
+  }
+
+  getStarCoords().forEach(({ r, c }) => {
+    const dot = document.createElement('div');
+    dot.className = 'star-dot';
+    dot.style.left = pct(c) + '%';
+    dot.style.top = pct(r) + '%';
+    stars.appendChild(dot);
+  });
+
+  for (let r = 0; r < game.size; r++) {
+    for (let c = 0; c < game.size; c++) {
+      const btn = document.createElement('button');
+      btn.className = 'point empty';
+      btn.style.left = pct(c) + '%';
+      btn.style.top = pct(r) + '%';
+      btn.dataset.r = r;
+      btn.dataset.c = c;
+      btn.dataset.value = String(EMPTY);
+      btn.setAttribute('aria-label', `第${r + 1}行第${c + 1}列`);
+      btn.addEventListener('click', () => onPointTap(r, c));
+      points.appendChild(btn);
+    }
+  }
+}
+
+function getStarCoords() {
+  const mid = Math.floor(game.size / 2);
+  const edge = game.size <= 9 ? 2 : 3;
+  const far = game.size - 1 - edge;
+  const coords = [
+    { r: edge, c: edge }, { r: edge, c: mid }, { r: edge, c: far },
+    { r: mid, c: edge }, { r: mid, c: mid }, { r: mid, c: far },
+    { r: far, c: edge }, { r: far, c: mid }, { r: far, c: far },
+  ];
+  const seen = new Set();
+  return coords.filter(p => {
+    const key = p.r + ',' + p.c;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return inside(p.r, p.c);
+  });
+}
+
+function pointButton(r, c) {
+  return $('pointLayer').querySelector(`[data-r="${r}"][data-c="${c}"]`);
+}
+
+function renderPieces() {
+  const winSet = new Set(game.winningCells.map(p => p.r + ',' + p.c));
+  const lastKey = game.lastMove ? game.lastMove.r + ',' + game.lastMove.c : '';
+  document.querySelectorAll('.point').forEach(btn => {
+    const r = Number(btn.dataset.r);
+    const c = Number(btn.dataset.c);
+    const value = getCell(r, c);
+    btn.classList.toggle('empty', value === EMPTY);
+    btn.classList.toggle('last', lastKey === r + ',' + c);
+    btn.classList.toggle('win', winSet.has(r + ',' + c));
+    if (btn.dataset.value !== String(value)) {
+      btn.dataset.value = String(value);
+      btn.innerHTML = '';
+      if (value !== EMPTY) {
+        const stone = document.createElement('div');
+        stone.className = 'stone ' + (value === BLACK ? 'black' : 'white');
+        btn.appendChild(stone);
+      }
+    }
+  });
+  drawWinLine();
+}
+
+function drawTargets(targets) {
+  const layer = $('targetLayer');
+  layer.innerHTML = '';
+  targets.forEach((target, i) => {
+    const marker = document.createElement('div');
+    marker.className = 'target' + (i === 0 ? ' primary' : '');
+    marker.style.left = pct(target.c) + '%';
+    marker.style.top = pct(target.r) + '%';
+    layer.appendChild(marker);
+  });
+}
+
+function pulseTargets() {
+  const layer = $('targetLayer');
+  layer.classList.add('flash');
+  setTimeout(() => layer.classList.remove('flash'), 850);
+}
+
+function drawWinLine() {
+  const svg = $('winSvg');
+  svg.innerHTML = '';
+  if (game.winningCells.length < 5) return;
+  const first = game.winningCells[0];
+  const last = game.winningCells[game.winningCells.length - 1];
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', pct(first.c));
+  line.setAttribute('y1', pct(first.r));
+  line.setAttribute('x2', pct(last.c));
+  line.setAttribute('y2', pct(last.r));
+  svg.appendChild(line);
+}
+
+function updateTurnPill() {
+  const dot = $('turnDot');
+  dot.classList.toggle('white', game.turn === WHITE);
+  const modeText = {
+    lesson: '学棋',
+    practice: '闯关',
+    robot: game.turn === BLACK ? '黑棋' : '白棋',
+    family: game.turn === BLACK ? '黑棋' : '白棋',
+  };
+  $('turnText').textContent = modeText[game.mode];
+}
+
+function updateStars() {
+  $('starsCount').textContent = saved.stars;
+}
+
+function updateModeButtons() {
+  document.querySelectorAll('.mode-tile').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === game.mode);
+  });
+}
+
+function updateProgress() {
+  const row = $('progressRow');
+  row.innerHTML = '';
+  const total = game.mode === 'lesson' ? lessonSteps.length : 5;
+  const current = game.mode === 'lesson' ? game.lessonIndex : game.practiceRound % 5;
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot';
+    dot.classList.toggle('done', i < current);
+    dot.classList.toggle('now', i === current);
+    row.appendChild(dot);
+  }
+}
+
+function renderMiniBoard(kind='line') {
+  const mini = $('miniBoard');
+  mini.innerHTML = '';
+  for (let i = 0; i < 25; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'mini-cell';
+    mini.appendChild(cell);
+  }
+  const cells = [...mini.children];
+  const patterns = {
+    line: [10, 11, 12, 13, 14],
+    block: [5, 10, 15, 20],
+    diag: [0, 6, 12, 18, 24],
+    gap: [10, 11, 13, 14],
+  };
+  const hot = kind === 'block' ? 0 : kind === 'gap' ? 12 : 14;
+  const stones = patterns[kind] || patterns.line;
+  stones.forEach(i => cells[i].classList.add(kind === 'block' ? 'white' : 'black'));
+  if (cells[hot]) cells[hot].classList.add('hot');
+}
+
+function setMode(mode, speakNow=true) {
+  game.mode = mode;
+  game.locked = false;
+  game.gameOver = false;
+  game.targets = [];
+  game.winningCells = [];
+  updateModeButtons();
+  if (mode === 'lesson') startLesson(saved.lessonIndex || 0, speakNow);
+  if (mode === 'practice') startPractice(speakNow);
+  if (mode === 'robot') startRobot(speakNow);
+  if (mode === 'family') startFamily(speakNow);
+}
+
+function startLesson(index=0, speakNow=true) {
+  game.mode = 'lesson';
+  game.lessonIndex = Math.max(0, Math.min(index, lessonSteps.length - 1));
+  saved.lessonIndex = game.lessonIndex;
+  saveState();
+  setBoardSize(9);
+  const step = lessonSteps[game.lessonIndex];
+  step.setup.forEach(p => setCell(p.r, p.c, p.v));
+  game.targets = step.targets;
+  game.turn = BLACK;
+  game.locked = false;
+  game.gameOver = false;
+  setCoach(step.prompt, step.visual);
+  renderPieces();
+  drawTargets(game.targets);
+  updateTurnPill();
+  updateProgress();
+  renderMiniBoard(step.visual === '🛡️' ? 'block' : step.visual === '✨' ? 'gap' : step.visual === '↘️' ? 'diag' : 'line');
+  if (speakNow) speak(step.prompt);
+}
+
+function startPractice(speakNow=true) {
+  game.mode = 'practice';
+  setBoardSize(9);
+  game.turn = BLACK;
+  game.locked = false;
+  game.gameOver = false;
+  const puzzle = makePracticePuzzle();
+  puzzle.setup.forEach(p => setCell(p.r, p.c, p.v));
+  game.targets = puzzle.targets;
+  setCoach(puzzle.prompt, puzzle.visual);
+  renderPieces();
+  drawTargets(game.targets);
+  updateTurnPill();
+  updateProgress();
+  renderMiniBoard(puzzle.kind);
+  if (speakNow) speak(puzzle.prompt);
+}
+
+function startRobot(speakNow=true) {
+  game.mode = 'robot';
+  setBoardSize(saved.boardSize || 11);
+  game.turn = BLACK;
+  game.locked = false;
+  game.gameOver = false;
+  game.targets = [];
+  setCoach('黑棋先走。先占中间附近。', '⚫');
+  drawTargets([]);
+  updateTurnPill();
+  updateProgress();
+  renderMiniBoard('line');
+  if (speakNow) speak('黑棋先走。先占中间附近。');
+}
+
+function startFamily(speakNow=true) {
+  game.mode = 'family';
+  setBoardSize(saved.boardSize || 11);
+  game.turn = BLACK;
+  game.locked = false;
+  game.gameOver = false;
+  game.targets = [];
+  setCoach('黑棋先走，轮流下一颗。', '⚫');
+  drawTargets([]);
+  updateTurnPill();
+  updateProgress();
+  renderMiniBoard('line');
+  if (speakNow) speak('黑棋先走，轮流下一颗。');
+}
+
+function makePracticePuzzle() {
+  const kind = pick(['line', 'line', 'gap', 'diag', 'block']);
+  const line = randomLine(9);
+  let missingIndex = pick([0, 2, 4]);
+  if (kind === 'line') missingIndex = pick([0, 4]);
+  if (kind === 'diag') missingIndex = pick([0, 4]);
+  const player = kind === 'block' ? WHITE : BLACK;
+  const setup = line
+    .filter((_, i) => i !== missingIndex)
+    .map(p => ({ ...p, v: player }));
+  addPracticeNoise(setup, line);
+  const target = line[missingIndex];
+  const copy = setup.map(p => ({ r: p.r, c: p.c, v: p.v }));
+  const prompts = {
+    line: '黑棋差一颗连五，找到空位。',
+    gap: '中间缺一颗，补上空位。',
+    diag: '斜线差一颗，接上它。',
+    block: '白棋差一颗连五，快堵住。',
+  };
+  const visuals = {
+    line: '🏁',
+    gap: '✨',
+    diag: '↘️',
+    block: '🛡️',
+  };
+  return {
+    kind,
+    setup: copy,
+    targets: [target],
+    prompt: prompts[kind],
+    visual: visuals[kind],
+    player,
+  };
+}
+
+function randomLine(size) {
+  const dir = pick(dirs);
+  const minR = dir.dr < 0 ? 4 : 0;
+  const maxR = dir.dr > 0 ? size - 5 : size - 1;
+  const minC = dir.dc < 0 ? 4 : 0;
+  const maxC = dir.dc > 0 ? size - 5 : size - 1;
+  const r = minR + rand(maxR - minR + 1);
+  const c = minC + rand(maxC - minC + 1);
+  const line = [];
+  for (let i = 0; i < 5; i++) line.push({ r: r + dir.dr * i, c: c + dir.dc * i });
+  return line;
+}
+
+function addPracticeNoise(setup, protectedLine) {
+  if (saved.stars < 8) return;
+  const used = new Set([...setup, ...protectedLine].map(p => p.r + ',' + p.c));
+  const count = saved.stars > 18 ? 3 : 2;
+  for (let i = 0; i < count; i++) {
+    let r, c, tries = 0;
+    do {
+      r = rand(9); c = rand(9); tries++;
+    } while (used.has(r + ',' + c) && tries < 40);
+    used.add(r + ',' + c);
+    setup.push({ r, c, v: i % 2 ? BLACK : WHITE });
+  }
+}
+
+function onPointTap(r, c) {
+  unlockAudio();
+  if (game.locked || game.gameOver) return;
+  if (getCell(r, c) !== EMPTY) {
+    sfx.wrong();
+    speak('这里已经有棋子了。');
+    return;
+  }
+  if (game.mode === 'lesson') return handleLessonTap(r, c);
+  if (game.mode === 'practice') return handlePracticeTap(r, c);
+  if (game.mode === 'robot') return handleRobotTap(r, c);
+  if (game.mode === 'family') return handleFamilyTap(r, c);
+}
+
+function isTarget(r, c) {
+  return game.targets.some(t => t.r === r && t.c === c);
+}
+
+function handleLessonTap(r, c) {
+  const step = lessonSteps[game.lessonIndex];
+  if (!isTarget(r, c)) return missTarget('看闪闪的圆圈。');
+  placeStone(r, c, BLACK);
+  if (step.makesWin) {
+    const win = findWinFrom(r, c, BLACK);
+    if (win) game.winningCells = win;
+  }
+  renderPieces();
+  drawTargets([]);
+  addStar();
+  game.locked = true;
+  speak(step.success);
+  if (step.makesWin) sfx.win(); else sfx.star();
+  setTimeout(() => {
+    if (game.lessonIndex >= lessonSteps.length - 1) {
+      saved.lessonIndex = 0;
+      saveState();
+      showCelebration('学会啦！', '现在去闯关练一练', '🎓', () => setMode('practice', true));
+    } else {
+      startLesson(game.lessonIndex + 1, true);
+    }
+  }, step.makesWin ? 1500 : 1050);
+}
+
+function handlePracticeTap(r, c) {
+  if (!isTarget(r, c)) return missTarget('这个位置还不急。找闪闪的地方。');
+  placeStone(r, c, BLACK);
+  const win = findWinFrom(r, c, BLACK);
+  if (win) game.winningCells = win;
+  renderPieces();
+  drawTargets([]);
+  game.practiceRound++;
+  addStar();
+  game.locked = true;
+  const phrase = win ? '连成五颗，赢啦。' : '挡住啦，真稳。';
+  speak(phrase);
+  if (win) sfx.win(); else sfx.star();
+  setTimeout(() => {
+    if (game.practiceRound % 5 === 0) {
+      showCelebration('闯关成功！', '再来五关', '🏆', () => startPractice(true));
+    } else {
+      startPractice(true);
+    }
+  }, win ? 1300 : 900);
+}
+
+function handleRobotTap(r, c) {
+  if (game.turn !== BLACK) return;
+  placeStone(r, c, BLACK);
+  const result = finishIfNeeded(r, c, BLACK, '黑棋赢啦！');
+  if (result) return;
+  game.turn = WHITE;
+  game.locked = true;
+  setCoach('白棋想一想。', '🤖');
+  updateTurnPill();
+  setTimeout(robotMove, 520);
+}
+
+function robotMove() {
+  if (game.gameOver) return;
+  const move = bestMove(WHITE);
+  if (!move) return finishDraw();
+  placeStone(move.r, move.c, WHITE);
+  const result = finishIfNeeded(move.r, move.c, WHITE, '白棋连成五。再来一局。');
+  if (result) return;
+  game.turn = BLACK;
+  game.locked = false;
+  setCoach(nextHintPrompt(), '⚫');
+  updateTurnPill();
+  speak(game.prompt);
+}
+
+function handleFamilyTap(r, c) {
+  const player = game.turn;
+  placeStone(r, c, player);
+  const name = player === BLACK ? '黑棋赢啦！' : '白棋赢啦！';
+  const result = finishIfNeeded(r, c, player, name);
+  if (result) return;
+  game.turn = other(player);
+  updateTurnPill();
+  const prompt = game.turn === BLACK ? '轮到黑棋。' : '轮到白棋。';
+  setCoach(prompt, game.turn === BLACK ? '⚫' : '⚪');
+  speak(prompt);
+}
+
+function placeStone(r, c, player) {
+  setCell(r, c, player);
+  game.lastMove = { r, c };
+  sfx.place();
+  renderPieces();
+}
+
+function missTarget(text) {
+  sfx.wrong();
+  pulseTargets();
+  showToast('再试试');
+  speak(text);
+}
+
+function finishIfNeeded(r, c, player, message) {
+  const win = findWinFrom(r, c, player);
+  if (win) {
+    game.winningCells = win;
+    game.gameOver = true;
+    game.locked = true;
+    renderPieces();
+    sfx.win();
+    speak(message);
+    const sub = player === BLACK ? '黑棋五颗连起来' : '白棋五颗连起来';
+    const emoji = player === BLACK ? '⚫' : '⚪';
+    setTimeout(() => showCelebration(message, sub, emoji, () => restartCurrentMode(true)), 900);
+    if (player === BLACK) addStar();
+    return true;
+  }
+  if (game.board.every(v => v !== EMPTY)) {
+    finishDraw();
+    return true;
+  }
+  return false;
+}
+
+function finishDraw() {
+  game.gameOver = true;
+  game.locked = true;
+  speak('棋盘下满啦，平局。');
+  showCelebration('平局啦', '换一盘继续', '🤝', () => restartCurrentMode(true));
+}
+
+function nextHintPrompt() {
+  const win = findWinningMove(BLACK);
+  if (win) return '黑棋有机会连五。';
+  const block = findWinningMove(WHITE);
+  if (block) return '白棋有危险，黑棋要堵住。';
+  return pick(['轮到黑棋。找连在一起的位置。', '轮到黑棋。靠近自己的棋子。', '黑棋想一想，连成一条线。']);
+}
+
+function addStar() {
+  saved.stars++;
+  updateStars();
+  saveState();
+}
+
+function showToast(text) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 1200);
+}
+
+function showCelebration(title, sub, emoji, next) {
+  game.celebrationNext = next;
+  $('celTitle').textContent = title;
+  $('celSub').textContent = sub;
+  $('celEmoji').textContent = emoji;
+  $('celebration').classList.remove('hidden');
+  spawnConfetti(60);
+  sfx.win();
+}
+
+function hideCelebration() {
+  $('celebration').classList.add('hidden');
+  const next = game.celebrationNext;
+  game.celebrationNext = null;
+  if (next) next();
+}
+
+function spawnConfetti(count) {
+  const colors = ['#ff6b9d', '#2ec4b6', '#ffd60a', '#3498db', '#7bdff2', '#f7a072'];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.top = '-18px';
+    piece.style.background = pick(colors);
+    piece.style.borderRadius = Math.random() > 0.45 ? '50%' : '2px';
+    piece.style.animationDelay = (Math.random() * 0.5) + 's';
+    piece.style.animationDuration = (1.4 + Math.random() * 1.1) + 's';
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 2800);
+  }
+}
+
+function restartCurrentMode(speakNow=true) {
+  if (game.mode === 'lesson') return startLesson(game.lessonIndex, speakNow);
+  if (game.mode === 'practice') return startPractice(speakNow);
+  if (game.mode === 'robot') return startRobot(speakNow);
+  if (game.mode === 'family') return startFamily(speakNow);
+}
+
+function showHint() {
+  unlockAudio();
+  if (game.mode === 'lesson' || game.mode === 'practice') {
+    pulseTargets();
+    speak(game.prompt);
+    return;
+  }
+  if (game.gameOver || game.locked) {
+    speak('等一下。');
+    return;
+  }
+  const move = bestMove(game.turn);
+  if (!move) return;
+  drawTargets([move]);
+  speak('可以试试闪闪的位置。');
+  setTimeout(() => {
+    if (game.mode === 'robot' || game.mode === 'family') drawTargets([]);
+  }, 2300);
+}
+
+function cycleBoardSize() {
+  if (game.mode === 'lesson' || game.mode === 'practice') {
+    speak('学棋和闯关先用小棋盘。');
+    pulseTargets();
+    return;
+  }
+  const choices = [9, 11, 13];
+  const next = choices[(choices.indexOf(game.size) + 1) % choices.length];
+  saved.boardSize = next;
+  saveState();
+  restartCurrentMode(true);
+  showToast(next + '路');
+}
+
+function findWinFrom(r, c, player) {
+  for (const dir of dirs) {
+    const line = [{ r, c }];
+    let nr = r - dir.dr;
+    let nc = c - dir.dc;
+    while (inside(nr, nc) && getCell(nr, nc) === player) {
+      line.unshift({ r: nr, c: nc });
+      nr -= dir.dr;
+      nc -= dir.dc;
+    }
+    nr = r + dir.dr;
+    nc = c + dir.dc;
+    while (inside(nr, nc) && getCell(nr, nc) === player) {
+      line.push({ r: nr, c: nc });
+      nr += dir.dr;
+      nc += dir.dc;
+    }
+    if (line.length >= 5) return line;
+  }
+  return null;
+}
+
+function findWinningMove(player) {
+  const moves = emptyCells();
+  for (const move of moves) {
+    setCell(move.r, move.c, player);
+    const wins = findWinFrom(move.r, move.c, player);
+    setCell(move.r, move.c, EMPTY);
+    if (wins) return move;
+  }
+  return null;
+}
+
+function emptyCells() {
+  const cells = [];
+  for (let r = 0; r < game.size; r++) {
+    for (let c = 0; c < game.size; c++) {
+      if (getCell(r, c) === EMPTY) cells.push({ r, c });
+    }
+  }
+  return cells;
+}
+
+function bestMove(player) {
+  const ownWin = findWinningMove(player);
+  if (ownWin) return ownWin;
+  const block = findWinningMove(other(player));
+  if (block) return block;
+
+  const cells = emptyCells();
+  if (cells.length === 0) return null;
+  const center = (game.size - 1) / 2;
+  let best = [];
+  let bestScore = -Infinity;
+  for (const cell of cells) {
+    const attack = scoreMove(cell.r, cell.c, player);
+    const defense = scoreMove(cell.r, cell.c, other(player)) * 0.9;
+    const centerScore = Math.max(0, 16 - (Math.abs(cell.r - center) + Math.abs(cell.c - center)));
+    const neighborScore = nearbyCount(cell.r, cell.c) * 12;
+    const score = attack + defense + centerScore + neighborScore + Math.random() * 0.2;
+    if (score > bestScore + 0.01) {
+      bestScore = score;
+      best = [cell];
+    } else if (Math.abs(score - bestScore) <= 0.01) {
+      best.push(cell);
+    }
+  }
+  return pick(best);
+}
+
+function scoreMove(r, c, player) {
+  let score = 0;
+  for (const dir of dirs) {
+    const a = countSide(r, c, dir.dr, dir.dc, player);
+    const b = countSide(r, c, -dir.dr, -dir.dc, player);
+    const total = 1 + a.count + b.count;
+    const open = (a.open ? 1 : 0) + (b.open ? 1 : 0);
+    if (total >= 5) score += 100000;
+    else if (total === 4 && open === 2) score += 9000;
+    else if (total === 4 && open === 1) score += 4200;
+    else if (total === 3 && open === 2) score += 900;
+    else if (total === 3 && open === 1) score += 260;
+    else if (total === 2 && open === 2) score += 90;
+    else if (total === 2 && open === 1) score += 35;
+    else if (open === 2) score += 8;
+  }
+  return score;
+}
+
+function countSide(r, c, dr, dc, player) {
+  let count = 0;
+  let nr = r + dr;
+  let nc = c + dc;
+  while (inside(nr, nc) && getCell(nr, nc) === player) {
+    count++;
+    nr += dr;
+    nc += dc;
+  }
+  return { count, open: inside(nr, nc) && getCell(nr, nc) === EMPTY };
+}
+
+function nearbyCount(r, c) {
+  let count = 0;
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      if (inside(r + dr, c + dc) && getCell(r + dr, c + dc) !== EMPTY) count++;
+    }
+  }
+  return count;
+}
+
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+$('modeGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.mode-tile');
+  if (!btn) return;
+  unlockAudio();
+  sfx.click();
+  setMode(btn.dataset.mode, true);
+});
+$('hintBtn').addEventListener('click', showHint);
+$('resetBtn').addEventListener('click', () => {
+  unlockAudio();
+  sfx.click();
+  restartCurrentMode(true);
+});
+$('sizeBtn').addEventListener('click', () => {
+  unlockAudio();
+  sfx.click();
+  cycleBoardSize();
+});
+$('modeVoiceBtn').addEventListener('click', () => {
+  unlockAudio();
+  speak(game.prompt);
+});
+$('muteBtn').addEventListener('click', () => {
+  saved.muted = !saved.muted;
+  $('muteBtn').textContent = saved.muted ? '🔇' : '🔊';
+  if (saved.muted && 'speechSynthesis' in window) speechSynthesis.cancel();
+  saveState();
+});
+$('celBtn').addEventListener('click', () => {
+  unlockAudio();
+  hideCelebration();
+});
+document.addEventListener('dblclick', e => e.preventDefault());
+
+loadSaved();
+updateStars();
+$('muteBtn').textContent = saved.muted ? '🔇' : '🔊';
+game.practiceRound = 0;
+setMode('lesson', false);
+</script>
+</body>
+</html>
