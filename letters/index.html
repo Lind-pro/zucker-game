@@ -140,7 +140,7 @@
     box-shadow: 0 8px 0 #d99b00, 0 14px 24px rgba(0,0,0,0.16);
     display: grid;
     grid-template-columns: 1fr auto;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: 1fr;
     align-items: center;
     gap: clamp(8px, 2vmin, 16px);
     padding: clamp(14px, 3vmin, 24px);
@@ -168,21 +168,6 @@
     line-height: 1;
     filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18));
     animation: picture-bounce 0.42s ease-out;
-  }
-  .reader-word {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(8px, 2vmin, 14px);
-    color: #1d3557;
-    font-weight: 900;
-    font-size: clamp(24px, 5vmin, 38px);
-    line-height: 1;
-  }
-  .reader-cn {
-    color: #5a6c84;
-    font-size: clamp(15px, 3vmin, 22px);
   }
   @keyframes letter-pop {
     from { transform: scale(0.72) rotate(-4deg); opacity: 0; }
@@ -538,12 +523,11 @@ const SFX = {
   cheer: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'triangle', 0.22), i*100)); },
 };
 
-let enVoice = null, zhVoice = null;
+let enVoice = null;
 function pickVoices() {
   if (!('speechSynthesis' in window)) return;
   const voices = speechSynthesis.getVoices();
   enVoice = voices.find(v => v.lang.startsWith('en')) || null;
-  zhVoice = voices.find(v => v.lang.startsWith('zh')) || null;
 }
 if ('speechSynthesis' in window) {
   speechSynthesis.onvoiceschanged = pickVoices;
@@ -557,34 +541,8 @@ function speakEn(text) {
   if (enVoice) u.voice = enVoice;
   speechSynthesis.speak(u);
 }
-function speakZh(text) {
-  if (state.muted || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-CN'; u.rate = 0.9; u.pitch = 1.1;
-  if (zhVoice) u.voice = zhVoice;
-  speechSynthesis.speak(u);
-}
-function makeUtterance(text, lang, voice, rate=0.82, pitch=1.1) {
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  u.rate = rate;
-  u.pitch = pitch;
-  if (voice) u.voice = voice;
-  return u;
-}
-function speakSequence(parts) {
-  if (state.muted || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  parts.forEach(part => {
-    speechSynthesis.speak(makeUtterance(part.text, part.lang, part.voice, part.rate, part.pitch));
-  });
-}
 function speakLetter(item) {
-  speakSequence([
-    { text: item.L + '. ' + item.word + '.', lang: 'en-US', voice: enVoice, rate: 0.72, pitch: 1.08 },
-    { text: item.cn, lang: 'zh-CN', voice: zhVoice, rate: 0.9, pitch: 1.08 },
-  ]);
+  speakEn(item.L);
 }
 
 // ============================================================
@@ -748,7 +706,7 @@ function renderReader(index=state.readerIndex || 0, speakNow=false) {
 
   const card = document.createElement('button');
   card.className = 'reader-card';
-  card.setAttribute('aria-label', `${item.L} ${item.word}`);
+  card.setAttribute('aria-label', item.L);
   card.onclick = () => speakLetter(item);
 
   const letter = document.createElement('div');
@@ -763,16 +721,7 @@ function renderReader(index=state.readerIndex || 0, speakNow=false) {
   picture.className = 'reader-picture';
   picture.textContent = item.emoji;
 
-  const word = document.createElement('div');
-  word.className = 'reader-word';
-  const en = document.createElement('span');
-  en.textContent = item.word;
-  const cn = document.createElement('span');
-  cn.className = 'reader-cn';
-  cn.textContent = item.cn;
-  word.append(en, cn);
-
-  card.append(letter, picture, word);
+  card.append(letter, picture);
   qContent.appendChild(card);
   renderAlphabetGrid();
   updateLevelBadge();
@@ -790,7 +739,7 @@ function renderAlphabetGrid() {
     btn.className = 'choice letter-tile';
     btn.classList.toggle('active', index === state.readerIndex);
     btn.classList.toggle('visited', visited.has(item.L));
-    btn.setAttribute('aria-label', `${item.L} ${item.word}`);
+    btn.setAttribute('aria-label', item.L);
 
     const upper = document.createElement('span');
     upper.textContent = item.L;
