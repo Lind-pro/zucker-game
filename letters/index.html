@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="zh-CN">
+<meta charset="UTF-8">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ABC 大冒险 🅰️</title>
@@ -62,6 +62,42 @@
     font-weight: bold;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
+  .mode-switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.86);
+    border: 3px solid #fff;
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .mode-btn {
+    min-width: clamp(48px, 10vmin, 72px);
+    height: clamp(34px, 6.4vmin, 44px);
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #1d3557;
+    font-size: clamp(18px, 3.6vmin, 24px);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 0 clamp(7px, 1.5vmin, 12px);
+  }
+  .mode-btn span {
+    font-size: clamp(11px, 2.2vmin, 14px);
+    line-height: 1;
+  }
+  .mode-btn.active {
+    background: linear-gradient(180deg, #ffd60a 0%, #f4a700 100%);
+    color: #fff;
+    text-shadow: 1px 1px 0 #9c6f00;
+    box-shadow: 0 3px 0 #b8860b;
+  }
 
   main {
     flex: 1;
@@ -90,6 +126,72 @@
     display: flex; align-items: center; justify-content: center;
     flex-wrap: wrap; gap: clamp(4px, 1vmin, 12px);
     min-height: clamp(80px, 18vmin, 150px);
+  }
+
+  /* 点读 */
+  .reader-card {
+    width: min(100%, 420px);
+    min-height: clamp(190px, 34vmin, 280px);
+    border: 5px solid #ffd60a;
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255, 214, 10, 0.32), transparent 24%),
+      linear-gradient(180deg, #fff 0%, #e6fff8 100%);
+    box-shadow: 0 8px 0 #d99b00, 0 14px 24px rgba(0,0,0,0.16);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    gap: clamp(8px, 2vmin, 16px);
+    padding: clamp(14px, 3vmin, 24px);
+    cursor: pointer;
+  }
+  .reader-card:active { transform: translateY(3px); box-shadow: 0 5px 0 #d99b00, 0 8px 16px rgba(0,0,0,0.16); }
+  .reader-letter {
+    font-size: clamp(84px, 22vmin, 150px);
+    line-height: 0.82;
+    font-weight: 900;
+    color: #2ec4b6;
+    font-family: "Arial Black", "Helvetica Neue", sans-serif;
+    text-shadow: 5px 5px 0 #ffd60a, 8px 8px 0 rgba(0,0,0,0.16);
+    animation: letter-pop 0.28s cubic-bezier(.2,1.5,.4,1);
+  }
+  .reader-lower {
+    display: inline-block;
+    color: #ff6b9d;
+    margin-left: clamp(6px, 1.4vmin, 12px);
+    transform: scale(0.66);
+    transform-origin: bottom left;
+  }
+  .reader-picture {
+    font-size: clamp(72px, 17vmin, 122px);
+    line-height: 1;
+    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.18));
+    animation: picture-bounce 0.42s ease-out;
+  }
+  .reader-word {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 2vmin, 14px);
+    color: #1d3557;
+    font-weight: 900;
+    font-size: clamp(24px, 5vmin, 38px);
+    line-height: 1;
+  }
+  .reader-cn {
+    color: #5a6c84;
+    font-size: clamp(15px, 3vmin, 22px);
+  }
+  @keyframes letter-pop {
+    from { transform: scale(0.72) rotate(-4deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  @keyframes picture-bounce {
+    0% { transform: scale(0.7); opacity: 0; }
+    60% { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   /* 大写字母（题面） */
@@ -148,6 +250,12 @@
     gap: clamp(10px, 2vmin, 18px);
     margin-top: clamp(14px, 3vmin, 24px);
   }
+  .choices.alphabet-grid {
+    max-width: 760px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: clamp(6px, 1.25vmin, 11px);
+    margin-top: clamp(10px, 2vmin, 18px);
+  }
   .choice {
     aspect-ratio: 1.2 / 1;
     background: linear-gradient(180deg, #fff 0%, #f0f4f8 100%);
@@ -164,6 +272,37 @@
     line-height: 1;
   }
   .choice.pic { font-size: clamp(40px, 9vmin, 64px); }
+  .letter-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+    border-width: 4px;
+    font-size: clamp(24px, 5.4vmin, 42px);
+    position: relative;
+    overflow: hidden;
+  }
+  .letter-tile .tile-lower {
+    font-size: 0.55em;
+    color: #ff6b9d;
+    margin-left: 2px;
+    align-self: flex-end;
+    margin-bottom: 0.18em;
+  }
+  .letter-tile.active {
+    background: linear-gradient(180deg, #ffd60a 0%, #f4a700 100%);
+    border-color: #ff6b9d;
+    color: #fff;
+    text-shadow: 2px 2px 0 #9c6f00;
+    box-shadow: 0 6px 0 #b8860b, 0 0 24px rgba(255, 214, 10, 0.75);
+  }
+  .letter-tile.visited::after {
+    content: "";
+    position: absolute;
+    right: 7px; top: 7px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #2ec4b6;
+    box-shadow: 0 0 0 3px rgba(46, 196, 182, 0.18);
+  }
   .choice:active {
     transform: translateY(3px);
     box-shadow: 0 3px 0 #1a8e85, 0 5px 10px rgba(0,0,0,0.15);
@@ -262,6 +401,27 @@
     from { transform: translateY(-20px) rotate(0); opacity: 1; }
     to { transform: translateY(120vh) rotate(720deg); opacity: 0; }
   }
+
+  @media (max-width: 560px) {
+    .topbar { gap: 8px; padding-inline: 8px; }
+    .topbar-left { gap: 6px; }
+    .mode-btn span { display: none; }
+    .mode-btn { min-width: 38px; padding: 0 8px; }
+    .level-badge { padding-inline: 9px; }
+    main { padding-inline: 10px; }
+    .question-card { padding: 12px; border-radius: 18px; }
+    #app.reader-view .question-content { min-height: clamp(178px, 40dvh, 300px); }
+    .reader-card {
+      min-height: clamp(180px, 36dvh, 290px);
+      grid-template-columns: 1fr;
+      justify-items: center;
+      gap: 6px;
+    }
+    .reader-letter { font-size: clamp(86px, 26vmin, 128px); }
+    .reader-picture { font-size: clamp(62px, 18vmin, 92px); }
+    .choices.alphabet-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .letter-tile { border-radius: 12px; border-width: 3px; }
+  }
 </style>
 </head>
 <body>
@@ -272,6 +432,10 @@
       <div class="stars-display">⭐ <span id="stars">0</span></div>
     </div>
     <div class="topbar-left">
+      <div class="mode-switch" id="modeSwitch" aria-label="模式切换">
+        <button class="mode-btn active" data-view="reader" aria-label="点读模式">👆<span>点读</span></button>
+        <button class="mode-btn" data-view="quiz" aria-label="闯关模式">🎮<span>闯关</span></button>
+      </div>
       <div class="level-badge" id="levelBadge">A-H</div>
       <button class="icon-btn" id="muteBtn" aria-label="静音">🔊</button>
     </div>
@@ -332,7 +496,14 @@ const LETTERS = [
 // 状态
 // ============================================================
 const STORAGE_KEY = 'letters-game-v1';
-let state = { stars: 0, totalStars: 0, muted: false };
+let state = {
+  stars: 0,
+  totalStars: 0,
+  muted: false,
+  view: 'reader',
+  readerIndex: 0,
+  visitedLetters: [],
+};
 function load() {
   try { Object.assign(state, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')); } catch(e) {}
 }
@@ -361,6 +532,7 @@ function tone(freq, duration, type='sine', volume=0.18) {
   osc.start(); osc.stop(ctx.currentTime + duration);
 }
 const SFX = {
+  tap: () => { tone(660, 0.06, 'triangle', 0.11); setTimeout(() => tone(880, 0.08, 'triangle', 0.1), 60); },
   correct: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.15, 'triangle', 0.2), i*80)); },
   wrong: () => { tone(220, 0.2, 'square', 0.12); setTimeout(() => tone(180, 0.25, 'square', 0.1), 150); },
   cheer: () => { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'triangle', 0.22), i*100)); },
@@ -392,6 +564,27 @@ function speakZh(text) {
   u.lang = 'zh-CN'; u.rate = 0.9; u.pitch = 1.1;
   if (zhVoice) u.voice = zhVoice;
   speechSynthesis.speak(u);
+}
+function makeUtterance(text, lang, voice, rate=0.82, pitch=1.1) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+  u.rate = rate;
+  u.pitch = pitch;
+  if (voice) u.voice = voice;
+  return u;
+}
+function speakSequence(parts) {
+  if (state.muted || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  parts.forEach(part => {
+    speechSynthesis.speak(makeUtterance(part.text, part.lang, part.voice, part.rate, part.pitch));
+  });
+}
+function speakLetter(item) {
+  speakSequence([
+    { text: item.L + '. ' + item.word + '.', lang: 'en-US', voice: enVoice, rate: 0.72, pitch: 1.08 },
+    { text: item.cn, lang: 'zh-CN', voice: zhVoice, rate: 0.9, pitch: 1.08 },
+  ]);
 }
 
 // ============================================================
@@ -463,6 +656,9 @@ let currentQ = null;
 let lockChoices = false;
 
 function render(q) {
+  state.view = 'quiz';
+  document.getElementById('app').classList.remove('reader-view');
+  updateModeButtons();
   currentQ = q;
   lockChoices = false;
   const qText = document.getElementById('qText');
@@ -517,6 +713,7 @@ function render(q) {
 
 function renderChoices(q) {
   const choicesEl = document.getElementById('choices');
+  choicesEl.className = 'choices';
   choicesEl.innerHTML = '';
   q.choices.forEach(c => {
     const btn = document.createElement('button');
@@ -533,6 +730,92 @@ function renderChoices(q) {
     btn.onclick = () => onChoose(btn, c);
     choicesEl.appendChild(btn);
   });
+}
+
+function renderReader(index=state.readerIndex || 0, speakNow=false) {
+  state.view = 'reader';
+  state.readerIndex = Math.max(0, Math.min(index, LETTERS.length - 1));
+  currentQ = null;
+  lockChoices = true;
+  document.getElementById('app').classList.add('reader-view');
+  updateModeButtons();
+
+  const item = LETTERS[state.readerIndex];
+  const qText = document.getElementById('qText');
+  const qContent = document.getElementById('qContent');
+  qText.textContent = '点一个字母，听一听';
+  qContent.innerHTML = '';
+
+  const card = document.createElement('button');
+  card.className = 'reader-card';
+  card.setAttribute('aria-label', `${item.L} ${item.word}`);
+  card.onclick = () => speakLetter(item);
+
+  const letter = document.createElement('div');
+  letter.className = 'reader-letter';
+  letter.textContent = item.L;
+  const lower = document.createElement('span');
+  lower.className = 'reader-lower';
+  lower.textContent = item.l;
+  letter.appendChild(lower);
+
+  const picture = document.createElement('div');
+  picture.className = 'reader-picture';
+  picture.textContent = item.emoji;
+
+  const word = document.createElement('div');
+  word.className = 'reader-word';
+  const en = document.createElement('span');
+  en.textContent = item.word;
+  const cn = document.createElement('span');
+  cn.className = 'reader-cn';
+  cn.textContent = item.cn;
+  word.append(en, cn);
+
+  card.append(letter, picture, word);
+  qContent.appendChild(card);
+  renderAlphabetGrid();
+  updateLevelBadge();
+  save();
+  if (speakNow) speakLetter(item);
+}
+
+function renderAlphabetGrid() {
+  const choicesEl = document.getElementById('choices');
+  choicesEl.className = 'choices alphabet-grid';
+  choicesEl.innerHTML = '';
+  const visited = new Set(state.visitedLetters || []);
+  LETTERS.forEach((item, index) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice letter-tile';
+    btn.classList.toggle('active', index === state.readerIndex);
+    btn.classList.toggle('visited', visited.has(item.L));
+    btn.setAttribute('aria-label', `${item.L} ${item.word}`);
+
+    const upper = document.createElement('span');
+    upper.textContent = item.L;
+    const lower = document.createElement('span');
+    lower.className = 'tile-lower';
+    lower.textContent = item.l;
+    btn.append(upper, lower);
+    btn.onclick = () => selectReaderLetter(index);
+    choicesEl.appendChild(btn);
+  });
+}
+
+function selectReaderLetter(index) {
+  const item = LETTERS[index];
+  const visited = new Set(state.visitedLetters || []);
+  if (!visited.has(item.L)) {
+    visited.add(item.L);
+    state.visitedLetters = [...visited];
+    state.totalStars++;
+    document.getElementById('stars').textContent = state.totalStars;
+    SFX.correct();
+  } else {
+    SFX.tap();
+  }
+  renderReader(index, true);
 }
 
 function onChoose(btn, value) {
@@ -573,8 +856,29 @@ function nextQuestion() {
 }
 
 function updateLevelBadge() {
+  if (state.view === 'reader') {
+    const n = new Set(state.visitedLetters || []).size;
+    document.getElementById('levelBadge').textContent = n + '/26';
+    return;
+  }
   const n = poolSize();
   document.getElementById('levelBadge').textContent = 'A-' + LETTERS[n-1].L;
+}
+
+function updateModeButtons() {
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === state.view);
+  });
+}
+
+function setView(view) {
+  state.view = view;
+  save();
+  if (view === 'reader') {
+    renderReader(state.readerIndex || 0, true);
+  } else {
+    nextQuestion();
+  }
 }
 
 function showToast(text) {
@@ -615,6 +919,12 @@ function spawnConfetti(n) {
 }
 
 document.getElementById('celBtn').onclick = hideCelebration;
+document.getElementById('modeSwitch').onclick = e => {
+  const btn = e.target.closest('.mode-btn');
+  if (!btn) return;
+  SFX.tap();
+  setView(btn.dataset.view);
+};
 document.getElementById('muteBtn').onclick = () => {
   state.muted = !state.muted;
   document.getElementById('muteBtn').textContent = state.muted ? '🔇' : '🔊';
@@ -624,9 +934,15 @@ document.getElementById('muteBtn').onclick = () => {
 
 // 启动
 load();
+if (!Array.isArray(state.visitedLetters)) state.visitedLetters = [];
+if (state.view !== 'quiz') state.view = 'reader';
 document.getElementById('stars').textContent = state.totalStars;
 document.getElementById('muteBtn').textContent = state.muted ? '🔇' : '🔊';
-nextQuestion();
+if (state.view === 'reader') {
+  renderReader(state.readerIndex || 0, false);
+} else {
+  nextQuestion();
+}
 document.addEventListener('dblclick', e => e.preventDefault());
 </script>
 </body>
