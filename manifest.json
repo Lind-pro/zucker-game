@@ -36,6 +36,18 @@
       "short_name": "五子棋",
       "url": "./gomoku/",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "单词小集市",
+      "short_name": "单词",
+      "url": "./words/",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "百数小火车",
+      "short_name": "百数",
+      "url": "./numbers100/",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
 }

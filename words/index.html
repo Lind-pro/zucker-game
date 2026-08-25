@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>单词小集市</title>
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icon.svg">
+<meta name="theme-color" content="#ff9f1c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    color: #17324d;
+    overflow: hidden;
+    touch-action: manipulation;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.28) 38%, rgba(255,255,255,0)),
+      linear-gradient(135deg, #fff0b3 0%, #b8f5e0 44%, #9fd3ff 100%);
+  }
+  button, a { font: inherit; }
+  #app {
+    width: 100vw; height: 100vh; height: 100dvh;
+    padding:
+      env(safe-area-inset-top)
+      env(safe-area-inset-right)
+      env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto auto auto;
+    align-items: center;
+    gap: clamp(8px, 1.6vmin, 14px);
+    padding: clamp(8px, 1.5vmin, 14px) clamp(10px, 2vmin, 18px);
+    flex-shrink: 0;
+    z-index: 5;
+  }
+  .icon-btn {
+    width: clamp(42px, 7vmin, 56px); height: clamp(42px, 7vmin, 56px);
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 4px 0 rgba(23,50,77,0.16), 0 8px 16px rgba(0,0,0,0.14);
+    color: #17324d;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: clamp(20px, 4vmin, 27px);
+    padding: 0;
+  }
+  .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(23,50,77,0.18), 0 4px 10px rgba(0,0,0,0.12); }
+  .title-pill, .stars-pill, .count-pill {
+    min-height: clamp(38px, 6.5vmin, 50px);
+    border-radius: 8px;
+    border: 3px solid #fff;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 4px 0 rgba(23,50,77,0.15), 0 8px 16px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .title-pill {
+    justify-self: start;
+    padding: 0 clamp(10px, 2vmin, 18px);
+    gap: 7px;
+    font-size: clamp(16px, 3vmin, 22px);
+  }
+  .stars-pill {
+    justify-self: end;
+    padding: 0 clamp(12px, 2.4vmin, 20px);
+    gap: 6px;
+    color: #fff;
+    background: linear-gradient(180deg, #ffd60a 0%, #f4a700 100%);
+    text-shadow: 1px 1px 0 #9c6f00;
+    font-size: clamp(17px, 3.2vmin, 24px);
+  }
+  .count-pill {
+    padding: 0 clamp(10px, 2vmin, 16px);
+    color: #17324d;
+    font-size: clamp(14px, 2.6vmin, 18px);
+    white-space: nowrap;
+  }
+  .mode-switch {
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.86);
+    border: 3px solid #fff;
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.14);
+  }
+  .mode-btn {
+    min-width: clamp(48px, 10vmin, 78px);
+    height: clamp(34px, 6.2vmin, 44px);
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #17324d;
+    font-size: clamp(18px, 3.4vmin, 24px);
+    font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 0 clamp(7px, 1.5vmin, 12px);
+  }
+  .mode-btn span { font-size: clamp(11px, 2.2vmin, 14px); line-height: 1; }
+  .mode-btn.active {
+    color: #fff;
+    background: linear-gradient(180deg, #ff9f1c 0%, #f36b21 100%);
+    text-shadow: 1px 1px 0 #a94411;
+    box-shadow: 0 3px 0 #a94411;
+  }
+
+  main {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(310px, 1fr) minmax(260px, 360px);
+    gap: clamp(12px, 2vmin, 20px);
+    padding: 0 clamp(10px, 2vmin, 18px) clamp(10px, 2vmin, 18px);
+  }
+  .hero-zone {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(10px, 1.8vmin, 16px);
+  }
+  .coach {
+    width: min(100%, 760px);
+    min-height: clamp(60px, 9vmin, 78px);
+    border-radius: 8px;
+    border: 3px solid #fff;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 5px 0 rgba(46,196,182,0.5), 0 12px 22px rgba(0,0,0,0.12);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: clamp(8px, 1.6vmin, 14px);
+    padding: clamp(8px, 1.5vmin, 12px) clamp(10px, 2vmin, 16px);
+  }
+  .coach-face, .coach-visual {
+    width: clamp(42px, 7.6vmin, 58px); height: clamp(42px, 7.6vmin, 58px);
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: #fff4bf;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(26px, 5vmin, 38px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  }
+  .coach-visual {
+    background: #e4fff8;
+    animation: nod 1.5s ease-in-out infinite;
+  }
+  @keyframes nod {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .coach-text {
+    color: #17324d;
+    font-size: clamp(17px, 3vmin, 24px);
+    font-weight: 900;
+    line-height: 1.2;
+  }
+
+  .big-card {
+    width: min(100%, 690px);
+    flex: 1;
+    min-height: 0;
+    border: 5px solid #fff;
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.48)),
+      var(--card-bg, #fff7c2);
+    box-shadow: 0 10px 0 rgba(118,75,21,0.24), 0 20px 32px rgba(0,0,0,0.18);
+    display: grid;
+    grid-template-rows: 1fr auto;
+    overflow: hidden;
+    position: relative;
+  }
+  .big-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 14px, transparent 14px 28px);
+    pointer-events: none;
+  }
+  .big-stage {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 2vmin, 18px);
+    padding: clamp(18px, 4vmin, 34px);
+    min-height: 0;
+  }
+  .big-emoji {
+    font-size: clamp(96px, 24vmin, 210px);
+    line-height: 1;
+    filter: drop-shadow(0 8px 8px rgba(0,0,0,0.18));
+    animation: pop 0.32s cubic-bezier(.2,1.5,.4,1);
+  }
+  .big-word {
+    font-family: "Arial Black", "Helvetica Neue", sans-serif;
+    font-size: clamp(48px, 11vmin, 96px);
+    font-weight: 900;
+    line-height: 0.95;
+    color: #17324d;
+    text-shadow: 4px 4px 0 #ffd60a, 7px 7px 0 rgba(0,0,0,0.14);
+    letter-spacing: 0;
+    text-align: center;
+    word-break: keep-all;
+  }
+  .big-cn {
+    font-size: clamp(18px, 3.8vmin, 28px);
+    font-weight: 900;
+    color: #5a6c84;
+  }
+  .big-actions {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(8px, 1.5vmin, 12px);
+    padding: clamp(10px, 2vmin, 16px);
+    background: rgba(255,255,255,0.62);
+    border-top: 3px solid rgba(255,255,255,0.74);
+  }
+  .big-btn {
+    height: clamp(52px, 8vmin, 68px);
+    border: 3px solid #fff;
+    border-radius: 8px;
+    color: #17324d;
+    background: linear-gradient(180deg, #fff 0%, #e8fff9 100%);
+    box-shadow: 0 4px 0 rgba(46,196,182,0.52), 0 8px 14px rgba(0,0,0,0.1);
+    font-size: clamp(24px, 4.4vmin, 34px);
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .big-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(46,196,182,0.52), 0 4px 10px rgba(0,0,0,0.1); }
+  @keyframes pop {
+    from { transform: scale(0.7) rotate(-5deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  .side-panel {
+    min-height: 0;
+    border: 3px solid #fff;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 5px 0 rgba(255,159,28,0.42), 0 12px 22px rgba(0,0,0,0.12);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(9px, 1.6vmin, 14px);
+    padding: clamp(9px, 1.8vmin, 14px);
+  }
+  .category-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .cat-btn {
+    min-height: clamp(54px, 9vmin, 72px);
+    border: 3px solid #fff;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #fff 0%, #f2fbff 100%);
+    box-shadow: 0 4px 0 rgba(23,50,77,0.16), 0 8px 14px rgba(0,0,0,0.1);
+    color: #17324d;
+    font-size: clamp(24px, 4.8vmin, 36px);
+    font-weight: 900;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+  .cat-btn span { font-size: clamp(11px, 2.2vmin, 14px); line-height: 1; }
+  .cat-btn.active {
+    background: linear-gradient(180deg, var(--cat-light, #fff7c2) 0%, var(--cat-color, #ff9f1c) 100%);
+    color: #fff;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.22);
+    border-color: #ff6b9d;
+  }
+  .word-grid {
+    min-height: 0;
+    overflow: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: clamp(8px, 1.5vmin, 12px);
+    padding: 2px 2px 8px;
+    scrollbar-width: none;
+  }
+  .word-grid::-webkit-scrollbar { display: none; }
+  .word-tile {
+    min-height: clamp(104px, 18vmin, 140px);
+    border: 4px solid #fff;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #fff 0%, #f4fbff 100%);
+    box-shadow: 0 5px 0 rgba(23,50,77,0.16), 0 9px 14px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    color: #17324d;
+    font-weight: 900;
+    position: relative;
+    overflow: hidden;
+  }
+  .word-tile:active { transform: translateY(2px); box-shadow: 0 3px 0 rgba(23,50,77,0.16), 0 5px 10px rgba(0,0,0,0.1); }
+  .word-tile.active {
+    background: linear-gradient(180deg, #fff7c2 0%, #ffd60a 100%);
+    border-color: #ff6b9d;
+  }
+  .word-tile.learned::after {
+    content: "";
+    position: absolute;
+    top: 7px; right: 7px;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: #2ec4b6;
+    box-shadow: 0 0 0 3px rgba(46,196,182,0.16);
+  }
+  .tile-emoji {
+    font-size: clamp(40px, 8vmin, 62px);
+    line-height: 1;
+  }
+  .tile-word {
+    font-family: "Arial Black", "Helvetica Neue", sans-serif;
+    font-size: clamp(16px, 3.4vmin, 24px);
+    line-height: 1;
+    word-break: keep-all;
+  }
+
+  .quiz-board {
+    width: min(100%, 760px);
+    flex: 1;
+    min-height: 0;
+    display: none;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(12px, 2vmin, 18px);
+  }
+  #app.quiz-view .big-card { display: none; }
+  #app.quiz-view .quiz-board { display: grid; }
+  .listen-card {
+    border: 5px solid #fff;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 7px 0 rgba(255,159,28,0.45), 0 14px 22px rgba(0,0,0,0.13);
+    min-height: clamp(118px, 20vmin, 168px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 3vmin, 24px);
+    padding: clamp(14px, 3vmin, 24px);
+  }
+  .listen-btn {
+    width: clamp(86px, 16vmin, 124px); height: clamp(86px, 16vmin, 124px);
+    border-radius: 50%;
+    border: 5px solid #fff;
+    background: linear-gradient(180deg, #ffd60a 0%, #f4a700 100%);
+    box-shadow: 0 7px 0 #b8860b, 0 12px 20px rgba(0,0,0,0.18);
+    font-size: clamp(42px, 8vmin, 62px);
+    cursor: pointer;
+    animation: listen-pulse 1.4s ease-in-out infinite;
+  }
+  .listen-btn:active { transform: translateY(3px); box-shadow: 0 4px 0 #b8860b, 0 7px 12px rgba(0,0,0,0.16); }
+  .listen-face {
+    font-size: clamp(42px, 9vmin, 70px);
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.16));
+  }
+  @keyframes listen-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .quiz-choices {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(10px, 2vmin, 16px);
+  }
+  .quiz-choice {
+    border: 5px solid #fff;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #fff 0%, #e8fff9 100%);
+    box-shadow: 0 6px 0 rgba(23,50,77,0.16), 0 10px 16px rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(72px, 16vmin, 118px);
+    cursor: pointer;
+  }
+  .quiz-choice:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(23,50,77,0.16), 0 6px 10px rgba(0,0,0,0.1); }
+  .quiz-choice.correct {
+    background: linear-gradient(180deg, #b8f5e0 0%, #2ec4b6 100%);
+    animation: correct 0.55s ease-out;
+  }
+  .quiz-choice.wrong {
+    background: linear-gradient(180deg, #ffd0d6 0%, #ff8fa3 100%);
+    animation: shake 0.45s ease-out;
+  }
+  @keyframes correct {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-7px); }
+    75% { transform: translateX(7px); }
+  }
+
+  .toast {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 70;
+    border: 4px solid #fff;
+    border-radius: 8px;
+    background: rgba(23,50,77,0.92);
+    color: #fff;
+    padding: clamp(12px, 2.5vmin, 18px) clamp(18px, 4vmin, 34px);
+    font-size: clamp(20px, 4vmin, 30px);
+    font-weight: 900;
+    pointer-events: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.26);
+    animation: toast 1.1s ease-out forwards;
+  }
+  @keyframes toast {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -68%) scale(1); opacity: 0; }
+  }
+  .confetti {
+    position: absolute;
+    width: 12px; height: 12px;
+    pointer-events: none;
+    z-index: 80;
+    animation: fall 2s linear forwards;
+  }
+  @keyframes fall {
+    from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+
+  @media (max-width: 860px) {
+    .topbar {
+      grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+      gap: 7px;
+      padding-inline: 8px;
+    }
+    .title-pill { display: none; }
+    .mode-switch { justify-self: end; }
+    .mode-btn span { display: none; }
+    .mode-btn { min-width: 39px; padding: 0 8px; }
+    main {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 10px;
+      overflow: hidden;
+    }
+    .coach { min-height: 56px; }
+    .coach-face { display: none; }
+    .coach { grid-template-columns: 1fr auto; }
+    .side-panel {
+      width: 100%;
+      max-width: 760px;
+      justify-self: center;
+      grid-template-rows: auto auto;
+      padding: 8px;
+      gap: 8px;
+    }
+    .word-grid {
+      overflow: visible;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      padding: 0;
+    }
+    .word-tile {
+      min-height: 64px;
+      border-width: 3px;
+      gap: 1px;
+    }
+    .tile-emoji { font-size: clamp(26px, 7vmin, 38px); }
+    .tile-word { font-size: clamp(10px, 2.7vmin, 14px); }
+    .big-card { min-height: 0; }
+    .big-actions { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .count-pill { padding-inline: 8px; }
+    .stars-pill { padding-inline: 10px; }
+    main { padding-inline: 8px; }
+    .coach-text { font-size: clamp(15px, 4vmin, 20px); }
+    .big-stage { padding: 14px; }
+    .big-emoji { font-size: clamp(88px, 25vmin, 136px); }
+    .big-word { font-size: clamp(42px, 13vmin, 66px); }
+    .big-cn { font-size: clamp(16px, 4vmin, 22px); }
+    .category-tabs { gap: 6px; }
+    .cat-btn { min-height: 54px; }
+    .word-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .word-tile { min-height: 59px; }
+    .quiz-choices { gap: 9px; }
+    .quiz-choice { font-size: clamp(62px, 18vmin, 92px); }
+  }
+  @media (max-height: 680px) and (max-width: 860px) {
+    .coach { min-height: 48px; }
+    .coach-visual { display: none; }
+    .coach { grid-template-columns: 1fr; }
+    .big-actions { padding: 8px; }
+    .big-btn { height: 48px; }
+    .word-tile { min-height: 52px; }
+    .tile-word { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <a class="icon-btn" href="../" aria-label="返回游戏屋">🏠</a>
+    <button class="icon-btn" id="repeatBtn" aria-label="再听一次">🔁</button>
+    <div class="title-pill"><span>🍎</span><span>单词小集市</span></div>
+    <div class="mode-switch" id="modeSwitch" aria-label="模式切换">
+      <button class="mode-btn active" data-view="reader" aria-label="点读">👆<span>点读</span></button>
+      <button class="mode-btn" data-view="quiz" aria-label="练习">🎧<span>练习</span></button>
+    </div>
+    <div class="stars-pill">⭐ <span id="stars">0</span></div>
+    <div class="count-pill" id="countPill">0/30</div>
+    <button class="icon-btn" id="muteBtn" aria-label="声音">🔊</button>
+  </header>
+
+  <main>
+    <section class="hero-zone">
+      <div class="coach" aria-live="polite">
+        <div class="coach-face">🙂</div>
+        <div class="coach-text" id="coachText">点图片，听一个单词。</div>
+        <div class="coach-visual" id="coachVisual">👆</div>
+      </div>
+
+      <div class="big-card" id="bigCard" role="button" tabindex="0" aria-label="点读单词">
+        <div class="big-stage" id="bigStage">
+          <div class="big-emoji" id="bigEmoji">🍎</div>
+          <div class="big-word" id="bigWord">apple</div>
+          <div class="big-cn" id="bigCn">苹果</div>
+        </div>
+        <div class="big-actions">
+          <button class="big-btn" id="prevBtn" aria-label="上一个">◀</button>
+          <button class="big-btn" id="speakBtn" aria-label="听单词">🔊</button>
+          <button class="big-btn" id="nextBtn" aria-label="下一个">▶</button>
+        </div>
+      </div>
+
+      <div class="quiz-board" id="quizBoard">
+        <div class="listen-card">
+          <button class="listen-btn" id="listenBtn" aria-label="听单词">🔊</button>
+          <div class="listen-face" id="listenFace">🎧</div>
+        </div>
+        <div class="quiz-choices" id="quizChoices"></div>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <div class="category-tabs" id="categoryTabs"></div>
+      <div class="word-grid" id="wordGrid"></div>
+    </aside>
+  </main>
+</div>
+
+<script>
+const STORAGE_KEY = 'words-game-v1';
+const CATEGORIES = [
+  {
+    id: 'fruit',
+    name: '水果',
+    icon: '🍎',
+    color: '#ff6b9d',
+    light: '#ffe3eb',
+    words: [
+      { word: 'apple', emoji: '🍎', cn: '苹果' },
+      { word: 'banana', emoji: '🍌', cn: '香蕉' },
+      { word: 'orange', emoji: '🍊', cn: '橙子' },
+      { word: 'grape', emoji: '🍇', cn: '葡萄' },
+      { word: 'strawberry', emoji: '🍓', cn: '草莓' },
+      { word: 'watermelon', emoji: '🍉', cn: '西瓜' },
+      { word: 'pear', emoji: '🍐', cn: '梨' },
+      { word: 'peach', emoji: '🍑', cn: '桃子' },
+      { word: 'pineapple', emoji: '🍍', cn: '菠萝' },
+      { word: 'lemon', emoji: '🍋', cn: '柠檬' },
+    ],
+  },
+  {
+    id: 'vegetable',
+    name: '蔬菜',
+    icon: '🥦',
+    color: '#2ec4b6',
+    light: '#dffff8',
+    words: [
+      { word: 'carrot', emoji: '🥕', cn: '胡萝卜' },
+      { word: 'corn', emoji: '🌽', cn: '玉米' },
+      { word: 'tomato', emoji: '🍅', cn: '番茄' },
+      { word: 'potato', emoji: '🥔', cn: '土豆' },
+      { word: 'broccoli', emoji: '🥦', cn: '西兰花' },
+      { word: 'cucumber', emoji: '🥒', cn: '黄瓜' },
+      { word: 'onion', emoji: '🧅', cn: '洋葱' },
+      { word: 'mushroom', emoji: '🍄', cn: '蘑菇' },
+      { word: 'pepper', emoji: '🫑', cn: '甜椒' },
+      { word: 'eggplant', emoji: '🍆', cn: '茄子' },
+    ],
+  },
+  {
+    id: 'animal',
+    name: '动物',
+    icon: '🐶',
+    color: '#3498db',
+    light: '#e0f1ff',
+    words: [
+      { word: 'cat', emoji: '🐱', cn: '猫' },
+      { word: 'dog', emoji: '🐶', cn: '狗' },
+      { word: 'rabbit', emoji: '🐰', cn: '兔子' },
+      { word: 'bird', emoji: '🐦', cn: '鸟' },
+      { word: 'fish', emoji: '🐟', cn: '鱼' },
+      { word: 'cow', emoji: '🐮', cn: '奶牛' },
+      { word: 'horse', emoji: '🐴', cn: '马' },
+      { word: 'pig', emoji: '🐷', cn: '猪' },
+      { word: 'duck', emoji: '🦆', cn: '鸭子' },
+      { word: 'sheep', emoji: '🐑', cn: '羊' },
+    ],
+  },
+];
+const WORDS = CATEGORIES.flatMap(cat => cat.words.map((item, index) => ({
+  ...item,
+  category: cat.id,
+  categoryName: cat.name,
+  categoryIcon: cat.icon,
+  color: cat.color,
+  light: cat.light,
+  index,
+})));
+
+let state = {
+  view: 'reader',
+  category: 'fruit',
+  selectedKey: 'fruit:apple',
+  learned: [],
+  stars: 0,
+  muted: false,
+};
+let currentQuiz = null;
+let locked = false;
+let audioCtx = null;
+let enVoice = null;
+
+function $(id) { return document.getElementById(id); }
+function keyOf(item) { return item.category + ':' + item.word; }
+function categoryById(id) { return CATEGORIES.find(cat => cat.id === id) || CATEGORIES[0]; }
+function wordsInCategory(id=state.category) { return WORDS.filter(item => item.category === id); }
+function selectedItem() {
+  return WORDS.find(item => keyOf(item) === state.selectedKey) || WORDS[0];
+}
+function rand(n) { return Math.floor(Math.random() * n); }
+function pick(arr) { return arr[rand(arr.length)]; }
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rand(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function load() {
+  try { Object.assign(state, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')); } catch(e) {}
+  if (!Array.isArray(state.learned)) state.learned = [];
+  if (!CATEGORIES.some(cat => cat.id === state.category)) state.category = 'fruit';
+  if (!WORDS.some(item => keyOf(item) === state.selectedKey)) state.selectedKey = 'fruit:apple';
+}
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices();
+  enVoice = voices.find(v => v.lang === 'en-US') || voices.find(v => v.lang.startsWith('en')) || null;
+}
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = pickVoice;
+  pickVoice();
+}
+function speakWord(item) {
+  if (state.muted || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(item.word);
+  u.lang = 'en-US';
+  u.rate = 0.74;
+  u.pitch = 1.08;
+  if (enVoice) u.voice = enVoice;
+  speechSynthesis.speak(u);
+}
+function getCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function unlockAudio() {
+  const ctx = getCtx();
+  if (ctx && ctx.state === 'suspended') ctx.resume();
+}
+function tone(freq, duration, type='sine', volume=0.16) {
+  if (state.muted) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + duration);
+}
+const SFX = {
+  tap: () => { tone(660, 0.06, 'triangle', 0.11); setTimeout(() => tone(880, 0.08, 'triangle', 0.1), 60); },
+  good: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.13, 'triangle', 0.18), i * 75)); },
+  wrong: () => { tone(210, 0.2, 'square', 0.1); setTimeout(() => tone(170, 0.22, 'square', 0.08), 140); },
+};
+
+function markLearned(item) {
+  const key = keyOf(item);
+  if (state.learned.includes(key)) return false;
+  state.learned.push(key);
+  state.stars++;
+  updateProgress();
+  save();
+  return true;
+}
+
+function setCoach(text, visual='👆') {
+  $('coachText').textContent = text;
+  $('coachVisual').textContent = visual;
+}
+
+function renderAll() {
+  document.getElementById('app').classList.toggle('quiz-view', state.view === 'quiz');
+  updateModeButtons();
+  renderCategories();
+  renderWordGrid();
+  updateProgress();
+  if (state.view === 'quiz') {
+    startQuiz(false);
+  } else {
+    renderReader(selectedItem(), false);
+  }
+}
+
+function renderReader(item, speakNow=true) {
+  state.view = 'reader';
+  state.category = item.category;
+  state.selectedKey = keyOf(item);
+  const cat = categoryById(item.category);
+  document.getElementById('app').classList.remove('quiz-view');
+  document.querySelector('.big-card').style.setProperty('--card-bg', `linear-gradient(135deg, ${cat.light} 0%, #ffffff 58%, #fff7c2 100%)`);
+  $('bigEmoji').textContent = item.emoji;
+  $('bigWord').textContent = item.word;
+  $('bigCn').textContent = item.cn;
+  $('bigCard').setAttribute('aria-label', item.word);
+  setCoach('点图片，听一个单词。', '👆');
+  renderCategories();
+  renderWordGrid();
+  updateModeButtons();
+  updateProgress();
+  if (speakNow) {
+    const isNew = markLearned(item);
+    if (isNew) {
+      SFX.good();
+      if (state.learned.length === WORDS.length) celebrate();
+    } else {
+      SFX.tap();
+    }
+  }
+  save();
+  if (speakNow) speakWord(item);
+}
+
+function renderCategories() {
+  const wrap = $('categoryTabs');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.classList.toggle('active', cat.id === state.category);
+    btn.style.setProperty('--cat-color', cat.color);
+    btn.style.setProperty('--cat-light', cat.light);
+    btn.setAttribute('aria-label', cat.name);
+    btn.innerHTML = `<strong>${cat.icon}</strong><span>${cat.name}</span>`;
+    btn.onclick = () => {
+      unlockAudio();
+      const item = wordsInCategory(cat.id)[0];
+      state.category = cat.id;
+      if (state.view === 'quiz') {
+        startQuiz(true);
+      } else {
+        renderReader(item, true);
+      }
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function renderWordGrid() {
+  const grid = $('wordGrid');
+  grid.innerHTML = '';
+  const learned = new Set(state.learned);
+  wordsInCategory().forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'word-tile';
+    btn.classList.toggle('active', keyOf(item) === state.selectedKey && state.view === 'reader');
+    btn.classList.toggle('learned', learned.has(keyOf(item)));
+    btn.setAttribute('aria-label', item.word);
+    const emoji = document.createElement('div');
+    emoji.className = 'tile-emoji';
+    emoji.textContent = item.emoji;
+    const word = document.createElement('div');
+    word.className = 'tile-word';
+    word.textContent = item.word;
+    btn.append(emoji, word);
+    btn.onclick = () => {
+      unlockAudio();
+      renderReader(item, true);
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function updateProgress() {
+  $('stars').textContent = state.stars;
+  $('countPill').textContent = state.learned.length + '/' + WORDS.length;
+  $('muteBtn').textContent = state.muted ? '🔇' : '🔊';
+}
+
+function updateModeButtons() {
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === state.view);
+  });
+}
+
+function setView(view) {
+  unlockAudio();
+  state.view = view;
+  save();
+  if (view === 'quiz') {
+    document.getElementById('app').classList.add('quiz-view');
+    setCoach('听声音，找图片。', '🎧');
+    startQuiz(true);
+  } else {
+    renderReader(selectedItem(), true);
+  }
+  updateModeButtons();
+}
+
+function startQuiz(speakNow=true) {
+  state.view = 'quiz';
+  document.getElementById('app').classList.add('quiz-view');
+  locked = false;
+  const pool = wordsInCategory();
+  const answer = pick(pool);
+  const choices = shuffle([answer, ...shuffle(pool.filter(item => item.word !== answer.word)).slice(0, 3)]);
+  currentQuiz = { answer, choices };
+  state.selectedKey = keyOf(answer);
+  renderCategories();
+  renderWordGrid();
+  renderQuizChoices();
+  updateModeButtons();
+  setCoach('听声音，找图片。', '🎧');
+  save();
+  if (speakNow) setTimeout(() => speakWord(answer), 220);
+}
+
+function renderQuizChoices() {
+  const wrap = $('quizChoices');
+  wrap.innerHTML = '';
+  currentQuiz.choices.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-choice';
+    btn.textContent = item.emoji;
+    btn.setAttribute('aria-label', item.word);
+    btn.onclick = () => chooseQuiz(btn, item);
+    wrap.appendChild(btn);
+  });
+}
+
+function chooseQuiz(btn, item) {
+  unlockAudio();
+  if (locked) return;
+  if (item.word === currentQuiz.answer.word) {
+    locked = true;
+    btn.classList.add('correct');
+    SFX.good();
+    markLearned(item);
+    setCoach('找对啦。', '⭐');
+    speakWord(item);
+    setTimeout(() => startQuiz(true), 1000);
+  } else {
+    btn.classList.add('wrong');
+    SFX.wrong();
+    showToast('再试试');
+    setCoach('再听一遍，找图片。', '🎧');
+    setTimeout(() => btn.classList.remove('wrong'), 520);
+  }
+}
+
+function showToast(text) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = text;
+  document.getElementById('app').appendChild(toast);
+  setTimeout(() => toast.remove(), 1200);
+}
+
+function celebrate() {
+  showToast('全认识啦');
+  spawnConfetti(70);
+}
+function spawnConfetti(count) {
+  const colors = ['#ff6b9d', '#2ec4b6', '#ffd60a', '#3498db', '#ff9f1c', '#7bdff2'];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.top = '-18px';
+    piece.style.background = pick(colors);
+    piece.style.borderRadius = Math.random() > 0.48 ? '50%' : '2px';
+    piece.style.animationDelay = (Math.random() * 0.5) + 's';
+    piece.style.animationDuration = (1.4 + Math.random()) + 's';
+    document.getElementById('app').appendChild(piece);
+    setTimeout(() => piece.remove(), 2600);
+  }
+}
+
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+$('modeSwitch').onclick = e => {
+  const btn = e.target.closest('.mode-btn');
+  if (!btn) return;
+  setView(btn.dataset.view);
+};
+$('bigCard').onclick = e => {
+  if (e.target.closest('.big-actions')) return;
+  unlockAudio();
+  renderReader(selectedItem(), true);
+};
+$('speakBtn').onclick = e => {
+  e.stopPropagation();
+  unlockAudio();
+  speakWord(selectedItem());
+};
+$('repeatBtn').onclick = () => {
+  unlockAudio();
+  if (state.view === 'quiz' && currentQuiz) speakWord(currentQuiz.answer);
+  else speakWord(selectedItem());
+};
+$('listenBtn').onclick = () => {
+  unlockAudio();
+  if (currentQuiz) speakWord(currentQuiz.answer);
+};
+$('prevBtn').onclick = e => {
+  e.stopPropagation();
+  unlockAudio();
+  const list = wordsInCategory();
+  const current = selectedItem();
+  const idx = list.findIndex(item => item.word === current.word);
+  renderReader(list[(idx - 1 + list.length) % list.length], true);
+};
+$('nextBtn').onclick = e => {
+  e.stopPropagation();
+  unlockAudio();
+  const list = wordsInCategory();
+  const current = selectedItem();
+  const idx = list.findIndex(item => item.word === current.word);
+  renderReader(list[(idx + 1) % list.length], true);
+};
+$('muteBtn').onclick = () => {
+  state.muted = !state.muted;
+  if (state.muted && 'speechSynthesis' in window) speechSynthesis.cancel();
+  updateProgress();
+  save();
+};
+
+load();
+renderAll();
+document.addEventListener('dblclick', e => e.preventDefault());
+</script>
+</body>
+</html>
