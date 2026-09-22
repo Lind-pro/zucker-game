@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#167969">
+  <title>拼音小课堂 · 小朋友游戏屋</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/lucide.min.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a href="../index.html" class="icon-button" aria-label="回到游戏屋" data-tip="回到游戏屋"><i data-lucide="house"></i></a>
+      <h1>拼音小课堂<span class="brand-mark" aria-hidden="true">a o e</span></h1>
+      <div class="stars" aria-label="获得的星星"><i data-lucide="star"></i><span id="stars">0</span></div>
+      <button id="help" class="icon-button" aria-label="听语音提示" data-tip="听语音提示"><i data-lucide="speech"></i></button>
+      <button id="mute" class="icon-button" aria-label="关闭声音" aria-pressed="false" data-tip="关闭声音"><i data-lucide="volume-2"></i></button>
+    </header>
+
+    <nav class="modes" aria-label="玩法">
+      <button data-mode="learn" class="active" aria-pressed="true"><i data-lucide="ear"></i><span>听一听</span></button>
+      <button data-mode="write" aria-pressed="false"><i data-lucide="pencil"></i><span>写一写</span></button>
+      <button data-mode="quiz" aria-pressed="false"><i data-lucide="scan-search"></i><span>找一找</span></button>
+    </nav>
+
+    <nav id="categories" class="categories" aria-label="拼音分组"></nav>
+
+    <main>
+      <section id="learning" class="learning" aria-label="拼音学习">
+        <div class="work-area">
+          <div class="section-heading">
+            <div><span class="small-label" id="groupLabel">单韵母</span><h2 id="lessonLabel">a o e i u ü</h2></div>
+            <span id="learned" class="learned">0 / 6</span>
+          </div>
+          <div class="writing-board" id="boardFrame">
+            <div class="board-top"><span id="strokeStatus" aria-live="polite">准备好啦</span><span class="board-mark" aria-hidden="true"><i data-lucide="pencil-line"></i></span></div>
+            <svg id="board" viewBox="0 0 640 310" aria-label="a 的笔顺" role="img">
+              <g class="guide-lines" aria-hidden="true"><path d="M0 40H640 M0 265H640"/><path class="middle-lines" d="M0 115H640 M0 190H640"/></g>
+              <g id="ghost"></g><g id="ink"></g><g id="traceInk"></g>
+              <g id="startDot" class="start-dot" style="display:none"><circle r="17"/><text y="6" text-anchor="middle">1</text></g>
+              <g id="pencil" style="display:none" aria-hidden="true"><circle r="6" fill="#e46880"/><g transform="translate(0,-34)"><path d="M0 34 L4 23 L29 -2 L37 6 L12 31 Z" fill="#ffd46a" stroke="#273b37" stroke-width="2"/><path d="M0 34 L4 23 L12 31 Z" fill="#273b37"/><path d="M26 1 L34 9" stroke="#e46880" stroke-width="7"/></g></g>
+            </svg>
+            <div id="strokeSteps" class="stroke-steps" aria-label="笔画顺序"></div>
+            <div id="boardCelebration" class="board-celebration" hidden><i data-lucide="badge-check"></i></div>
+          </div>
+          <div class="tools">
+            <button id="sound" class="round-button sound-button" aria-label="听拼音发音" data-tip="听拼音发音"><i data-lucide="volume-2"></i></button>
+            <div class="tool-group">
+              <button id="play" class="icon-button" aria-label="播放笔顺动画" data-tip="播放笔顺动画"><i data-lucide="play"></i></button>
+              <button id="replay" class="icon-button" aria-label="重播笔顺" data-tip="重播笔顺"><i data-lucide="rotate-ccw"></i></button>
+              <button id="undo" class="icon-button" aria-label="回退一笔" data-tip="回退一笔" hidden disabled><i data-lucide="undo-2"></i></button>
+              <button id="clear" class="icon-button" aria-label="重新描写" data-tip="重新描写" hidden><i data-lucide="eraser"></i></button>
+            </div>
+            <label class="slow"><input type="checkbox" id="slow" checked><span>慢慢写</span></label>
+          </div>
+          <div id="tones" class="tones" aria-label="四声练习"></div>
+          <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+        </div>
+        <aside class="letter-shelf" aria-label="本组拼音">
+          <div class="shelf-heading"><span id="pageLabel">1 / 1</span><div class="page-arrows"><button id="previousPage" class="icon-button" aria-label="上一组" data-tip="上一组"><i data-lucide="chevron-left"></i></button><button id="nextPage" class="icon-button" aria-label="下一组" data-tip="下一组"><i data-lucide="chevron-right"></i></button></div></div>
+          <div id="letters" class="letter-grid"></div>
+          <div class="letter-navigation"><button id="previous" class="icon-button" aria-label="上一个拼音" data-tip="上一个拼音"><i data-lucide="arrow-left"></i></button><span id="position">1 / 6</span><button id="next" class="icon-button" aria-label="下一个拼音" data-tip="下一个拼音"><i data-lucide="arrow-right"></i></button></div>
+          <div class="shelf-progress" aria-hidden="true"><span id="progressFill"></span></div>
+        </aside>
+      </section>
+
+      <section id="quiz" class="quiz" aria-label="听音找拼音" hidden>
+        <div class="quiz-heading"><h2>找一找</h2><div id="roundDots" class="round-dots" aria-label="练习进度"></div></div>
+        <button id="quizSound" class="quiz-sound" aria-label="听题目发音" data-tip="再听一遍"><i data-lucide="volume-2"></i><span class="sound-bars" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span></button>
+        <div id="answers" class="answers"></div>
+        <p id="quizFeedback" class="quiz-feedback" role="status" aria-live="polite"></p>
+        <button id="quizNext" class="round-button next-question" aria-label="下一题" data-tip="下一题" hidden><i data-lucide="arrow-right"></i></button>
+        <div id="quizResult" class="quiz-result" hidden><i data-lucide="trophy"></i><h2>完成啦！</h2><p id="resultText"></p><button id="again" class="again-button"><i data-lucide="rotate-ccw"></i>再玩一次</button></div>
+      </section>
+    </main>
+
+    <div id="audioError" class="audio-error" role="alert" hidden><i data-lucide="volume-x"></i><span id="audioErrorText">声音没有播放出来</span><button id="retryAudio" class="icon-button" aria-label="重试播放" data-tip="重试播放"><i data-lucide="rotate-ccw"></i></button></div>
+    <footer><a href="credits.html">音频来源</a></footer>
+  </div>
+</body>
+</html>

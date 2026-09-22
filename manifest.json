@@ -26,6 +26,12 @@
   ],
   "shortcuts": [
     {
+      "name": "拼音小课堂",
+      "short_name": "拼音",
+      "url": "./pinyin/",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
       "name": "拆快递大冒险",
       "short_name": "拆快递",
       "url": "./unboxing/",
