@@ -1,14 +1,15 @@
 {
-  "name": "小朋友游戏屋",
-  "short_name": "游戏屋",
-  "description": "给小朋友的小游戏合集",
+  "id": "./",
+  "name": "小小学习乐园",
+  "short_name": "学习乐园",
+  "description": "面向儿童的语文、数学、英语与思维启蒙学习乐园",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
-  "background_color": "#ffd6e0",
-  "theme_color": "#ff6b9d",
+  "background_color": "#f5f8fa",
+  "theme_color": "#20796b",
   "lang": "zh-CN",
   "icons": [
     {
@@ -26,33 +27,39 @@
   ],
   "shortcuts": [
     {
-      "name": "拼音小课堂",
+      "name": "笔画书写",
+      "short_name": "笔画",
+      "url": "./strokes/index.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "拼音启蒙",
       "short_name": "拼音",
-      "url": "./pinyin/",
+      "url": "./pinyin/index.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
     },
     {
-      "name": "拆快递大冒险",
-      "short_name": "拆快递",
-      "url": "./unboxing/",
+      "name": "英文字母",
+      "short_name": "字母",
+      "url": "./letters/index.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
     },
     {
-      "name": "五子棋小教练",
+      "name": "五子棋启蒙",
       "short_name": "五子棋",
-      "url": "./gomoku/",
+      "url": "./gomoku/index.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
     },
     {
-      "name": "单词小集市",
+      "name": "看图学单词",
       "short_name": "单词",
-      "url": "./words/",
+      "url": "./words/index.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
     },
     {
-      "name": "百数小火车",
+      "name": "百数练习",
       "short_name": "百数",
-      "url": "./numbers100/",
+      "url": "./numbers100/index.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#f1f0dc"/>
+  <g stroke="#c1c2a0" fill="none"><path d="M55 30V165M90 30V165M125 30V165M160 30V165M195 30V165M230 30V165M265 30V165"/><path d="M55 30H265M55 65H265M55 100H265M55 135H265M55 165H265"/></g>
+  <g fill="#344940"><circle cx="90" cy="100" r="13"/><circle cx="125" cy="100" r="13"/><circle cx="160" cy="100" r="13"/><circle cx="195" cy="100" r="13"/><circle cx="230" cy="100" r="13"/></g>
+  <g fill="#fff" stroke="#d3d6bd" stroke-width="2"><circle cx="125" cy="65" r="13"/><circle cx="160" cy="135" r="13"/><circle cx="195" cy="65" r="13"/><circle cx="230" cy="135" r="13"/></g>
+  <path d="M90 100H230" stroke="#e8938f" stroke-width="3" stroke-linecap="round"/>
+</svg>

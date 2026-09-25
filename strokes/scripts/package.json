@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": { "assets": "node download-assets.mjs" },
+  "dependencies": { "svgpath": "2.6.0" }
+}

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lesson="strokes">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#b74758">
+  <title>笔画书写 · 小小学习乐园</title>
+  <meta name="apple-mobile-web-app-title" content="学习乐园">
+  <script src="../shared/catalog.js" defer></script>
+  <script src="../shared/lesson-navigation.js" defer></script>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="../pinyin/style.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="../pinyin/vendor/lucide.min.js" defer></script>
+  <script src="vendor/hanzi-writer.min.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="character-data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a href="../index.html" class="icon-button" aria-label="返回学习首页" data-tip="返回学习首页"><i data-lucide="house"></i></a>
+      <h1>笔画书写<span class="brand-mark" aria-hidden="true">一笔一画</span></h1>
+      <div class="stars" aria-label="获得的星星"><i data-lucide="star"></i><span id="stars">0</span></div>
+      <button id="help" class="icon-button" aria-label="听语音提示" data-tip="听语音提示"><i data-lucide="speech"></i></button>
+      <button id="mute" class="icon-button" aria-label="关闭声音" aria-pressed="false" data-tip="关闭声音"><i data-lucide="volume-2"></i></button>
+    </header>
+    <nav class="modes" aria-label="玩法">
+      <button data-mode="learn" class="active" aria-pressed="true"><i data-lucide="ear"></i><span>听一听</span></button>
+      <button data-mode="write" aria-pressed="false"><i data-lucide="pencil"></i><span>写一写</span></button>
+      <button data-mode="quiz" aria-pressed="false"><i data-lucide="scan-search"></i><span>找一找</span></button>
+    </nav>
+    <nav id="categories" class="categories" aria-label="笔画分组"></nav>
+    <main>
+      <section id="learning" class="learning" aria-label="笔画学习">
+        <div class="work-area">
+          <div class="section-heading"><div><span id="groupLabel" class="small-label">基础笔画</span><h2 id="lessonLabel">横 <span id="pinyinLabel">héng</span></h2></div><span id="learned" class="learned"></span></div>
+          <div class="writing-board" id="boardFrame">
+            <div class="board-top"><span id="strokeStatus" role="status">准备好啦</span><span class="board-mark" aria-hidden="true"><i data-lucide="pencil-line"></i></span></div>
+            <div id="board" aria-label="横的笔顺" role="group">
+              <svg class="square-grid" viewBox="0 0 320 320" aria-hidden="true"><path d="M1 1H319V319H1Z"/><path class="cross-lines" d="M160 1V319M1 160H319"/></svg>
+              <div id="writerHost"></div>
+              <div id="startDot" aria-hidden="true" hidden>1</div>
+            </div>
+            <div id="strokeSteps" class="stroke-steps" aria-label="笔画顺序"></div>
+            <div id="boardCelebration" class="board-celebration" hidden><i data-lucide="badge-check"></i></div>
+          </div>
+          <div class="tools">
+            <button id="sound" class="round-button sound-button" aria-label="听读音" data-tip="听读音"><i data-lucide="volume-2"></i></button>
+            <div class="tool-group">
+              <button id="play" class="icon-button" aria-label="播放笔顺动画" data-tip="播放笔顺动画"><i data-lucide="play"></i></button>
+              <button id="replay" class="icon-button" aria-label="重播笔顺" data-tip="重播笔顺"><i data-lucide="rotate-ccw"></i></button>
+              <button id="undo" class="icon-button" aria-label="回退一笔" data-tip="回退一笔" hidden disabled><i data-lucide="undo-2"></i></button>
+              <button id="clear" class="icon-button" aria-label="重新描写" data-tip="重新描写" hidden><i data-lucide="eraser"></i></button>
+            </div>
+            <label class="slow"><input type="checkbox" id="slow" checked><span>慢慢写</span></label>
+          </div>
+          <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+        </div>
+        <aside class="letter-shelf" aria-label="本组笔画与汉字">
+          <div class="shelf-heading"><span id="pageLabel"></span><div class="page-arrows"><button id="previousPage" class="icon-button" aria-label="上一组" data-tip="上一组"><i data-lucide="chevron-left"></i></button><button id="nextPage" class="icon-button" aria-label="下一组" data-tip="下一组"><i data-lucide="chevron-right"></i></button></div></div>
+          <div id="letters" class="letter-grid"></div>
+          <div class="letter-navigation"><button id="previous" class="icon-button" aria-label="上一个" data-tip="上一个"><i data-lucide="arrow-left"></i></button><span id="position"></span><button id="next" class="icon-button" aria-label="下一个" data-tip="下一个"><i data-lucide="arrow-right"></i></button></div>
+          <div class="shelf-progress" aria-hidden="true"><span id="progressFill"></span></div>
+        </aside>
+      </section>
+      <section id="quiz" class="quiz" aria-label="听音选择" hidden>
+        <div class="quiz-heading"><h2>找一找</h2><div id="roundDots" class="round-dots"></div></div>
+        <button id="quizSound" class="quiz-sound" aria-label="听题目发音" data-tip="再听一遍"><i data-lucide="volume-2"></i><span class="sound-bars" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span></button>
+        <div id="answers" class="answers"></div>
+        <p id="quizFeedback" class="quiz-feedback" role="status" aria-live="polite"></p>
+        <button id="quizNext" class="round-button" aria-label="下一题" data-tip="下一题" hidden><i data-lucide="arrow-right"></i></button>
+        <div id="quizResult" class="quiz-result" hidden><i data-lucide="trophy"></i><h2>完成啦！</h2><p>收集了 5 颗星星</p><button id="again" class="again-button"><i data-lucide="rotate-ccw"></i>再玩一次</button></div>
+      </section>
+    </main>
+    <div id="audioError" class="audio-error" role="alert" hidden><i data-lucide="volume-x"></i><span id="audioErrorText">声音没有播放出来</span><button id="retryAudio" class="icon-button" aria-label="重试播放" data-tip="重试播放"><i data-lucide="rotate-ccw"></i></button></div>
+    <footer><a href="credits.html">笔顺与音频来源</a></footer>
+  </div>
+</body>
+</html>

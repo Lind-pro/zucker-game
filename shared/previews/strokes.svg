@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#f9e8eb"/>
+  <rect x="88" y="23" width="133" height="133" fill="#fff" stroke="#e3b7c2" stroke-width="2"/>
+  <path d="M154.5 23V156M88 89.5H221" stroke="#e9cbd2" stroke-dasharray="5 4"/>
+  <text x="154" y="129" text-anchor="middle" font-family="Kaiti SC,KaiTi,serif" font-size="105" fill="#ae4961">木</text>
+  <path d="M251 139L264 145L299 60L286 54Z" fill="#edbf53"/><path d="M251 139L249 159L264 145Z" fill="#3e5049"/><path d="M286 54L290 45Q292 41 297 43L303 46Q307 48 305 53L299 60Z" fill="#df788b"/>
+</svg>

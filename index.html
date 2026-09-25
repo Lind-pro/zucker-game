@@ -1,283 +1,43 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>小朋友游戏屋 🎮</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
-<meta name="theme-color" content="#ff6b9d">
-<meta name="description" content="给小朋友的小游戏合集 · 拆快递、认数字、百数练习、学字母、学拼音、识汉字、学单词、学五子棋">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="游戏屋">
-<style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-  html, body {
-    margin: 0; padding: 0;
-    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-    background: linear-gradient(135deg, #fff5d6 0%, #ffd6e0 50%, #c5e3f0 100%);
-    overflow-x: hidden;
-    min-height: 100vh; min-height: 100dvh;
-  }
-  body {
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
-
-  /* 飘动的装饰 */
-  .decor { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-  .cloud {
-    position: absolute; background: #fff; border-radius: 100px;
-    opacity: 0.85; animation: cloud-drift 25s linear infinite;
-  }
-  .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
-  .cloud-1 { width: 80px; height: 26px; top: 8%; left: -120px; }
-  .cloud-1::before { width: 38px; height: 38px; top: -18px; left: 12px; }
-  .cloud-1::after { width: 28px; height: 28px; top: -12px; left: 42px; }
-  .cloud-2 { width: 100px; height: 30px; top: 22%; left: -150px; animation-delay: -10s; animation-duration: 30s; }
-  .cloud-2::before { width: 44px; height: 44px; top: -22px; left: 14px; }
-  .cloud-2::after { width: 34px; height: 34px; top: -16px; left: 54px; }
-  @keyframes cloud-drift {
-    from { transform: translateX(0); }
-    to { transform: translateX(calc(100vw + 200px)); }
-  }
-
-  .balloon {
-    position: absolute; width: 36px; height: 46px;
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    animation: balloon-float 6s ease-in-out infinite;
-    box-shadow: inset -6px -8px 0 rgba(0,0,0,0.1);
-  }
-  .balloon::before {
-    content: ""; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
-    border: 5px solid transparent; border-top-color: inherit;
-  }
-  .balloon::after {
-    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-    width: 1.5px; height: 70px; background: #888; transform-origin: top;
-  }
-  .balloon-1 { background: #ff6b9d; bottom: 12%; left: 6%; animation-delay: 0s; }
-  .balloon-2 { background: #06d6a0; bottom: 25%; right: 5%; animation-delay: -2s; }
-  .balloon-3 { background: #ffd60a; bottom: 8%; right: 15%; animation-delay: -4s; }
-  @keyframes balloon-float {
-    0%, 100% { transform: translateY(0) rotate(-3deg); }
-    50% { transform: translateY(-22px) rotate(3deg); }
-  }
-
-  .star {
-    position: absolute; color: #ffd60a; font-size: 22px;
-    animation: twinkle 2.4s ease-in-out infinite;
-    text-shadow: 0 0 8px rgba(255,214,10,0.8);
-  }
-  .star-1 { top: 14%; right: 12%; animation-delay: 0s; }
-  .star-2 { top: 35%; left: 8%; animation-delay: -1s; }
-  .star-3 { top: 60%; right: 6%; animation-delay: -0.5s; font-size: 16px; }
-  .star-4 { top: 50%; left: 4%; animation-delay: -1.5s; font-size: 18px; }
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.4; transform: scale(0.85); }
-    50% { opacity: 1; transform: scale(1.2); }
-  }
-
-  /* 主体 */
-  .container {
-    position: relative; z-index: 1;
-    max-width: 980px; margin: 0 auto;
-    padding: clamp(24px, 6vmin, 48px) clamp(16px, 4vmin, 32px) clamp(40px, 8vmin, 80px);
-    text-align: center;
-  }
-  .title {
-    font-size: clamp(34px, 8vmin, 60px); font-weight: bold;
-    color: #fff;
-    text-shadow: 4px 4px 0 #ff6b9d, 8px 8px 0 rgba(0,0,0,0.15);
-    margin: clamp(8px, 2vmin, 20px) 0 clamp(4px, 1vmin, 10px);
-    letter-spacing: 3px;
-  }
-  .subtitle {
-    font-size: clamp(15px, 3vmin, 22px);
-    color: #1d3557; font-weight: bold;
-    margin-bottom: clamp(24px, 5vmin, 44px);
-    text-shadow: 2px 2px 0 #fff;
-  }
-
-  /* 游戏卡片 */
-  .game-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(220px, 88vw), 1fr));
-    gap: clamp(16px, 3.2vmin, 28px);
-  }
-  .game-card {
-    --card-color: #ff6b9d;
-    --card-shadow: #c2185b;
-    background: linear-gradient(180deg, #fff 0%, #fff8e1 100%);
-    border: 5px solid var(--card-color);
-    border-radius: 24px;
-    padding: clamp(16px, 3.5vmin, 28px) clamp(14px, 3vmin, 22px);
-    text-decoration: none;
-    color: inherit;
-    box-shadow: 0 8px 0 var(--card-shadow), 0 16px 30px rgba(0,0,0,0.18);
-    transition: transform 0.15s, box-shadow 0.15s;
-    position: relative;
-    overflow: hidden;
-    display: block;
-  }
-  .game-card:active {
-    transform: translateY(4px);
-    box-shadow: 0 4px 0 var(--card-shadow), 0 8px 16px rgba(0,0,0,0.2);
-  }
-  .game-card.coming-soon {
-    opacity: 0.7;
-    --card-color: #999;
-    --card-shadow: #666;
-    cursor: default;
-    pointer-events: none;
-  }
-  .game-card.coming-soon::before {
-    content: "敬请期待";
-    position: absolute;
-    top: 16px; right: -34px;
-    background: #ffd60a;
-    color: #1d3557;
-    font-size: 11px;
-    font-weight: bold;
-    padding: 4px 36px;
-    transform: rotate(35deg);
-    border-top: 1px solid #1d3557;
-    border-bottom: 1px solid #1d3557;
-    z-index: 2;
-  }
-  .card-pink   { --card-color: #ff6b9d; --card-shadow: #c2185b; }
-  .card-blue   { --card-color: #3498db; --card-shadow: #1a5d8a; }
-  .card-green  { --card-color: #2ec4b6; --card-shadow: #1a8e85; }
-  .card-orange { --card-color: #f39c12; --card-shadow: #b8730a; }
-  .card-mint   { --card-color: #06d6a0; --card-shadow: #087f63; }
-  .card-yellow { --card-color: #ff9f1c; --card-shadow: #b65f00; }
-  .card-cyan   { --card-color: #00a8e8; --card-shadow: #006d9a; }
-
-  .game-emoji {
-    font-size: clamp(56px, 13vmin, 96px);
-    line-height: 1;
-    margin-bottom: clamp(8px, 1.6vmin, 16px);
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
-    animation: bob 3s ease-in-out infinite;
-  }
-  @keyframes bob {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-  }
-  .game-card:nth-child(2) .game-emoji { animation-delay: -0.5s; }
-  .game-card:nth-child(3) .game-emoji { animation-delay: -1s; }
-  .game-card:nth-child(4) .game-emoji { animation-delay: -1.5s; }
-
-  .game-name {
-    font-size: clamp(20px, 4.2vmin, 30px);
-    font-weight: bold;
-    color: #1d3557;
-    margin-bottom: clamp(4px, 0.8vmin, 8px);
-  }
-  .game-desc {
-    font-size: clamp(13px, 2.5vmin, 17px);
-    color: #5a6c84;
-    line-height: 1.5;
-  }
-  .game-tag {
-    display: inline-block;
-    margin-top: clamp(6px, 1.2vmin, 10px);
-    padding: 3px 10px;
-    background: var(--card-color);
-    color: #fff;
-    border-radius: 999px;
-    font-size: clamp(10px, 1.8vmin, 13px);
-    font-weight: bold;
-  }
-
-  footer {
-    margin-top: clamp(24px, 5vmin, 44px);
-    color: #5a6c84;
-    font-size: clamp(12px, 2vmin, 14px);
-    line-height: 1.6;
-  }
-  footer a { color: #ff6b9d; text-decoration: none; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>小小学习乐园</title>
+  <meta name="description" content="给小朋友的学习乐园：拼音、汉字、笔画、数字、英文字母、常见单词和五子棋启蒙。">
+  <meta name="theme-color" content="#20796b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="学习乐园">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="shared/home.css">
+  <script src="pinyin/vendor/lucide.min.js" defer></script>
+  <script src="shared/catalog.js" defer></script>
+  <script src="shared/home.js" defer></script>
 </head>
 <body>
-  <div class="decor">
-    <div class="cloud cloud-1"></div>
-    <div class="cloud cloud-2"></div>
-    <div class="balloon balloon-1"></div>
-    <div class="balloon balloon-2"></div>
-    <div class="balloon balloon-3"></div>
-    <div class="star star-1">★</div>
-    <div class="star star-2">★</div>
-    <div class="star star-3">★</div>
-    <div class="star star-4">★</div>
-  </div>
-
-  <div class="container">
-    <h1 class="title">🎮 小朋友游戏屋 🎈</h1>
-    <p class="subtitle">挑一个游戏开始吧 ✨</p>
-
-    <div class="game-grid">
-      <a href="unboxing/" class="game-card card-pink">
-        <div class="game-emoji">📦</div>
-        <div class="game-name">拆快递大冒险</div>
-        <div class="game-desc">物流追踪 · 盲盒玩具收集</div>
-        <div class="game-tag">休闲收集</div>
-      </a>
-
-      <a href="numbers/" class="game-card card-blue">
-        <div class="game-emoji">🔢</div>
-        <div class="game-name">数字小达人</div>
-        <div class="game-desc">数一数 · 比大小 · 看时钟</div>
-        <div class="game-tag">认数字 · 0-20</div>
-      </a>
-
-      <a href="numbers100/" class="game-card card-cyan">
-        <div class="game-emoji">🚂100</div>
-        <div class="game-name">百数小火车</div>
-        <div class="game-desc">点读百数 · 听数字找数字</div>
-        <div class="game-tag">认数字 · 1-100</div>
-      </a>
-
-      <a href="letters/" class="game-card card-green">
-        <div class="game-emoji">🅰️</div>
-        <div class="game-name">ABC 大冒险</div>
-        <div class="game-desc">点读字母 · 大小写配对 · 看图找字母</div>
-        <div class="game-tag">学英文 · A-Z</div>
-      </a>
-
-      <a href="characters/" class="game-card card-orange">
-        <div class="game-emoji">字</div>
-        <div class="game-name">汉字小博士</div>
-        <div class="game-desc">看图识字 · 听字找字</div>
-        <div class="game-tag">认汉字 · 28 字</div>
-      </a>
-
-      <a href="pinyin/" class="game-card card-green">
-        <div class="game-emoji" style="font-family: 'Chalkboard SE', 'Comic Sans MS', sans-serif; color: #167969;">a o e</div>
-        <div class="game-name">拼音小课堂</div>
-        <div class="game-desc">点读发音 · 笔顺动画 · 动手描写</div>
-        <div class="game-tag">拼音启蒙</div>
-      </a>
-
-      <a href="words/" class="game-card card-yellow">
-        <div class="game-emoji">🍎🐶</div>
-        <div class="game-name">单词小集市</div>
-        <div class="game-desc">水果 · 蔬菜 · 常见动物</div>
-        <div class="game-tag">点读单词</div>
-      </a>
-
-      <a href="gomoku/" class="game-card card-mint">
-        <div class="game-emoji">⚫⚪</div>
-        <div class="game-name">五子棋小教练</div>
-        <div class="game-desc">动画提示 · 语音引导 · 亲子对弈</div>
-        <div class="game-tag">棋类启蒙</div>
-      </a>
-    </div>
-
-    <footer>
-      <p>😊 离线可玩 · 把网址加到主屏幕像 App 一样启动</p>
-    </footer>
+  <div class="home">
+    <header class="site-header">
+      <div class="brand"><img src="icon.svg" alt="" width="50" height="50"><h1>小小学习乐园</h1></div>
+      <div class="header-tools">
+        <div class="star-total" aria-label="学习星星"><i data-lucide="star"></i><span id="totalStars">0</span></div>
+        <button id="mute" class="icon-button" aria-label="关闭首页声音" aria-pressed="false" data-tip="关闭首页声音"><i data-lucide="volume-2"></i></button>
+      </div>
+    </header>
+    <main>
+      <div class="learning-heading"><h2>我的学习</h2><span id="lessonCount">8 个学习项目</span></div>
+      <nav id="subjects" class="subjects" aria-label="学习分类"></nav>
+      <section id="resume" class="resume" aria-label="继续学习" hidden>
+        <img id="resumeImage" src="shared/previews/pinyin.svg" alt="" width="64" height="48">
+        <div><span class="resume-caption">上次学习</span><strong id="resumeTitle"></strong></div>
+        <a id="resumeLink" class="resume-link"><span>继续学习</span><i data-lucide="arrow-right"></i></a>
+      </section>
+      <div id="lessons" class="lesson-grid"></div>
+      <p id="voiceStatus" class="voice-status" role="status" aria-live="polite"></p>
+      <noscript><p>请打开浏览器的 JavaScript，再进入学习乐园。</p></noscript>
+    </main>
+    <footer><i data-lucide="sprout"></i><span>一点一点，学会更多</span></footer>
   </div>
 </body>
 </html>

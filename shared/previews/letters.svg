@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#f6eaf5"/>
+  <path d="M31 144H289" stroke="#ddc5db" stroke-width="2"/>
+  <text x="47" y="136" font-family="Arial,sans-serif" font-size="116" font-weight="700" fill="#ad4f75">A</text>
+  <text x="166" y="136" font-family="Arial,sans-serif" font-size="101" font-weight="500" fill="#6b75b4">a</text>
+  <path d="M275 42V62M265 52H285" stroke="#d8b446" stroke-width="5" stroke-linecap="round"/>
+</svg>

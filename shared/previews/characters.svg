@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#eef1dc"/>
+  <circle cx="247" cy="49" r="18" fill="#efc95b"/>
+  <path d="M156 147L203 69L242 147Z" fill="#699f89"/><path d="M205 147L256 94L295 147Z" fill="#92b8a0"/>
+  <path d="M191 89L203 69L215 93L204 90L199 96Z" fill="#fff"/>
+  <rect x="28" y="51" width="111" height="105" rx="5" fill="#fff"/>
+  <text x="83" y="132" text-anchor="middle" font-family="Kaiti SC,KaiTi,serif" font-size="79" fill="#426756">山</text>
+</svg>
